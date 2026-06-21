@@ -3,6 +3,7 @@ import { Link } from "react-router-dom"
 import {
   CheckCircle2, Clock, AlertTriangle, PoundSterling, Calendar,
   TrendingUp, FileText, Plus, ChevronRight, BarChart3, Target,
+  X, Loader2,
 } from "lucide-react"
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid,
@@ -16,7 +17,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table"
-import { useContracts } from "@/hooks/useApi"
+import { useContracts, useCreateContract } from "@/hooks/useApi"
 import { formatCurrency, formatDate, daysUntil } from "@/lib/utils"
 import type { Milestone, KPI, Payment, Risk } from "@/types"
 
@@ -172,17 +173,160 @@ function RiskMatrix({ risks }: { risks: Risk[] }) {
   )
 }
 
-// ─── Payment chart data ───────────────────────────────────────────────────────
+// ─── Add Contract Modal ───────────────────────────────────────────────────────
 
-const PAYMENT_CHART_DATA = [
-  { name: "Paid", value: 0 },
-  { name: "Outstanding", value: 280_000 },
-]
+interface AddContractForm {
+  title: string
+  buyer: string
+  value: string
+  startDate: string
+  endDate: string
+  renewalDate: string
+}
+
+function AddContractModal({ onClose }: { onClose: () => void }) {
+  const createContract = useCreateContract()
+  const [form, setForm] = useState<AddContractForm>({
+    title: "",
+    buyer: "",
+    value: "",
+    startDate: "",
+    endDate: "",
+    renewalDate: "",
+  })
+
+  const set = (field: keyof AddContractForm) => (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => setForm(prev => ({ ...prev, [field]: e.target.value }))
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    await createContract.mutateAsync({
+      title: form.title,
+      buyer: form.buyer,
+      value: parseFloat(form.value),
+      startDate: form.startDate,
+      endDate: form.endDate,
+      renewalDate: form.renewalDate,
+      milestones: [],
+      kpis: [],
+      paymentSchedule: [],
+      risks: [],
+    } as Parameters<typeof createContract.mutateAsync>[0])
+    onClose()
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
+      <div className="w-full max-w-lg bg-white rounded-2xl shadow-2xl">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+          <h2 className="text-base font-semibold text-gray-900">Add Contract</h2>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="sm:col-span-2">
+              <label className="block text-xs font-medium text-gray-700 mb-1">Contract Title</label>
+              <input
+                required
+                value={form.title}
+                onChange={set("title")}
+                placeholder="e.g. Highway Maintenance — Manchester City Council"
+                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#1e3055]/30"
+              />
+            </div>
+
+            <div className="sm:col-span-2">
+              <label className="block text-xs font-medium text-gray-700 mb-1">Buyer / Client</label>
+              <input
+                required
+                value={form.buyer}
+                onChange={set("buyer")}
+                placeholder="e.g. Manchester City Council"
+                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#1e3055]/30"
+              />
+            </div>
+
+            <div className="sm:col-span-2">
+              <label className="block text-xs font-medium text-gray-700 mb-1">Contract Value (£)</label>
+              <input
+                required
+                type="number"
+                min="0"
+                step="1"
+                value={form.value}
+                onChange={set("value")}
+                placeholder="e.g. 185000"
+                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#1e3055]/30"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">Start Date</label>
+              <input
+                required
+                type="date"
+                value={form.startDate}
+                onChange={set("startDate")}
+                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#1e3055]/30"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">End Date</label>
+              <input
+                required
+                type="date"
+                value={form.endDate}
+                onChange={set("endDate")}
+                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#1e3055]/30"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">Renewal / Rebid Date</label>
+              <input
+                required
+                type="date"
+                value={form.renewalDate}
+                onChange={set("renewalDate")}
+                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#1e3055]/30"
+              />
+              <p className="text-xs text-gray-400 mt-0.5">The date when rebidding begins — usually 6–12 months before end.</p>
+            </div>
+          </div>
+
+          {createContract.isError && (
+            <p className="text-sm text-red-600">Failed to create contract. Please try again.</p>
+          )}
+
+          <div className="flex justify-end gap-3 pt-2 border-t border-gray-100">
+            <Button type="button" variant="outline" onClick={onClose} className="text-sm">
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              disabled={createContract.isPending}
+              className="bg-[#1e3055] text-white hover:bg-[#162540] text-sm gap-2"
+            >
+              {createContract.isPending && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+              {createContract.isPending ? "Creating…" : "Add Contract"}
+            </Button>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export default function ContractDelivery() {
   const [activeTab, setActiveTab] = useState("milestones")
+  const [showAddModal, setShowAddModal] = useState(false)
   const { data: contracts = [] } = useContracts()
   const contract = contracts[0] ?? null
 
@@ -199,9 +343,27 @@ export default function ContractDelivery() {
   const totalPaid = contract
     ? contract.paymentSchedule.filter(p => p.status === "paid").reduce((s, p) => s + p.amount, 0)
     : 0
+  const totalOutstanding = contract
+    ? contract.paymentSchedule.filter(p => p.status !== "paid").reduce((s, p) => s + p.amount, 0)
+    : 0
+  const paymentChartData = [
+    { name: "Paid", value: totalPaid },
+    { name: "Outstanding", value: totalOutstanding },
+  ]
+
+  // Compute renewal prep date (6 months before renewal)
+  const renewalPrepDate = contract
+    ? (() => {
+        const d = new Date(contract.renewalDate)
+        d.setMonth(d.getMonth() - 6)
+        return d.toLocaleDateString("en-GB", { month: "long", year: "numeric" })
+      })()
+    : ""
 
   return (
     <div className="min-h-screen bg-gray-50 pb-16">
+      {showAddModal && <AddContractModal onClose={() => setShowAddModal(false)} />}
+
       <div className="mx-auto max-w-screen-2xl px-4 py-6 sm:px-6 lg:px-8">
 
         {/* ─── Page Header ──────────────────────────────────────────────── */}
@@ -228,6 +390,12 @@ export default function ContractDelivery() {
                     <p className="text-2xl font-bold">{formatCurrency(contract.value)}</p>
                   </div>
                 )}
+                <Button
+                  onClick={() => setShowAddModal(true)}
+                  className="bg-white text-[#1e3055] hover:bg-blue-50 gap-1.5 font-semibold"
+                >
+                  <Plus className="h-4 w-4" /> Add Contract
+                </Button>
               </div>
             </div>
           </div>
@@ -237,10 +405,16 @@ export default function ContractDelivery() {
         {!contract && (
           <div className="rounded-xl border border-dashed border-gray-200 bg-white p-12 text-center mb-6">
             <FileText className="h-10 w-10 text-gray-300 mx-auto mb-3" />
-            <p className="text-sm font-medium text-gray-500">No active contracts yet</p>
-            <p className="text-xs text-gray-400 mt-1">
-              No active contracts yet — they'll appear here when you win and record a contract
+            <p className="text-sm font-medium text-gray-500 mb-1">No active contracts yet</p>
+            <p className="text-xs text-gray-400 mb-5">
+              Add a contract once you've been awarded work and it will appear here
             </p>
+            <Button
+              onClick={() => setShowAddModal(true)}
+              className="bg-[#1e3055] text-white hover:bg-[#162540] gap-1.5"
+            >
+              <Plus className="h-4 w-4" /> Add Your First Contract
+            </Button>
           </div>
         )}
 
@@ -357,49 +531,51 @@ export default function ContractDelivery() {
                 </Button>
               </CardHeader>
               <CardContent className="pt-0">
-                <div className="mb-5">
-                  <Progress
-                    value={(completedMilestones / contract.milestones.length) * 100}
-                    className="h-2.5 [&>div]:bg-green-500"
-                  />
-                  <p className="text-xs text-gray-400 mt-1.5">
-                    {completedMilestones}/{contract.milestones.length} milestones complete
-                    {completedMilestones === 0 && " — contract commences 1 Aug 2026"}
-                  </p>
-                </div>
-
-                <Table>
-                  <TableHeader>
-                    <TableRow className="bg-gray-50">
-                      <TableHead className="font-semibold text-gray-700">Milestone</TableHead>
-                      <TableHead className="font-semibold text-gray-700">Due Date</TableHead>
-                      <TableHead className="font-semibold text-gray-700">Status</TableHead>
-                      <TableHead className="font-semibold text-gray-700 text-right">Value</TableHead>
-                      <TableHead className="font-semibold text-gray-700">Days Until</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {contract.milestones.map((m: Milestone) => (
-                      <TableRow key={m.id} className="hover:bg-gray-50">
-                        <TableCell className="font-medium text-gray-900">{m.title}</TableCell>
-                        <TableCell className="text-gray-600">{formatDate(m.dueDate)}</TableCell>
-                        <TableCell>{milestoneBadge(m.status)}</TableCell>
-                        <TableCell className="text-right text-gray-700">
-                          {m.value
-                            ? formatCurrency(m.value)
-                            : <span className="text-gray-300">—</span>}
-                        </TableCell>
-                        <TableCell>
-                          <DaysUntilCell dateStr={m.dueDate} />
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-
-                <p className="mt-4 text-xs text-gray-400 italic">
-                  DEMO — All milestones are pending. Contract starts 1 August 2026.
-                </p>
+                {contract.milestones.length > 0 ? (
+                  <>
+                    <div className="mb-5">
+                      <Progress
+                        value={(completedMilestones / contract.milestones.length) * 100}
+                        className="h-2.5 [&>div]:bg-green-500"
+                      />
+                      <p className="text-xs text-gray-400 mt-1.5">
+                        {completedMilestones}/{contract.milestones.length} milestones complete
+                      </p>
+                    </div>
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="bg-gray-50">
+                          <TableHead className="font-semibold text-gray-700">Milestone</TableHead>
+                          <TableHead className="font-semibold text-gray-700">Due Date</TableHead>
+                          <TableHead className="font-semibold text-gray-700">Status</TableHead>
+                          <TableHead className="font-semibold text-gray-700 text-right">Value</TableHead>
+                          <TableHead className="font-semibold text-gray-700">Days Until</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {contract.milestones.map((m: Milestone) => (
+                          <TableRow key={m.id} className="hover:bg-gray-50">
+                            <TableCell className="font-medium text-gray-900">{m.title}</TableCell>
+                            <TableCell className="text-gray-600">{formatDate(m.dueDate)}</TableCell>
+                            <TableCell>{milestoneBadge(m.status)}</TableCell>
+                            <TableCell className="text-right text-gray-700">
+                              {m.value ? formatCurrency(m.value) : <span className="text-gray-300">—</span>}
+                            </TableCell>
+                            <TableCell>
+                              <DaysUntilCell dateStr={m.dueDate} />
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </>
+                ) : (
+                  <div className="py-10 text-center">
+                    <CheckCircle2 className="h-8 w-8 text-gray-200 mx-auto mb-2" />
+                    <p className="text-sm text-gray-400">No milestones added yet</p>
+                    <p className="text-xs text-gray-300 mt-0.5">Use "Add Milestone" to track contract deliverables</p>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
@@ -413,7 +589,7 @@ export default function ContractDelivery() {
                     Key Performance Indicators
                   </CardTitle>
                   <p className="text-xs text-gray-500 mt-0.5">
-                    Contract starts 1 Aug 2026 — KPI tracking begins then
+                    {contract.kpis.length} KPI{contract.kpis.length !== 1 ? "s" : ""} configured
                   </p>
                 </div>
                 <Button size="sm" variant="outline" className="gap-1.5 text-xs">
@@ -421,34 +597,27 @@ export default function ContractDelivery() {
                 </Button>
               </CardHeader>
               <CardContent className="pt-0">
-                <div className="mb-5 flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4">
-                  <Clock className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />
-                  <div>
-                    <p className="text-sm font-semibold text-amber-800">KPI monitoring not yet active</p>
-                    <p className="text-xs text-amber-700 mt-0.5">
-                      Tracking will begin automatically on 1 August 2026 when the contract commences.
-                      All current values show 0 as pre-commencement baselines.
-                    </p>
+                {contract.kpis.length > 0 ? (
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                    {contract.kpis.map((kpi: KPI) => (
+                      <KpiCard key={kpi.id} kpi={kpi} />
+                    ))}
                   </div>
-                </div>
-
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-                  {contract.kpis.map((kpi: KPI) => (
-                    <KpiCard key={kpi.id} kpi={kpi} />
-                  ))}
-                </div>
+                ) : (
+                  <div className="py-10 text-center">
+                    <Target className="h-8 w-8 text-gray-200 mx-auto mb-2" />
+                    <p className="text-sm text-gray-400">No KPIs configured yet</p>
+                    <p className="text-xs text-gray-300 mt-0.5">KPIs will be added during contract mobilisation</p>
+                  </div>
+                )}
 
                 <div className="mt-6 rounded-xl bg-gray-50 border border-dashed border-gray-200 p-6 text-center">
                   <BarChart3 className="h-9 w-9 text-gray-300 mx-auto mb-2" />
                   <p className="text-sm font-medium text-gray-500">KPI Trend Chart</p>
                   <p className="text-xs text-gray-400 mt-1">
-                    Monthly performance data will populate here once delivery begins (1 Aug 2026)
+                    Monthly performance data will populate here once delivery begins
                   </p>
                 </div>
-
-                <p className="mt-4 text-xs text-gray-400 italic">
-                  DEMO — KPI targets are set by Trafford Council. Values will update monthly.
-                </p>
               </CardContent>
             </Card>
           </TabsContent>
@@ -468,96 +637,102 @@ export default function ContractDelivery() {
                 </Button>
               </CardHeader>
               <CardContent className="pt-0">
-                {/* Amount received progress */}
-                <div className="mb-5">
-                  <div className="flex items-center justify-between text-xs text-gray-500 mb-1">
-                    <span>Amount received</span>
-                    <span className="font-medium text-gray-700">
-                      {formatCurrency(totalPaid)} / {formatCurrency(contract.value)}
-                    </span>
+                {contract.paymentSchedule.length > 0 ? (
+                  <>
+                    {/* Amount received progress */}
+                    <div className="mb-5">
+                      <div className="flex items-center justify-between text-xs text-gray-500 mb-1">
+                        <span>Amount received</span>
+                        <span className="font-medium text-gray-700">
+                          {formatCurrency(totalPaid)} / {formatCurrency(contract.value)}
+                        </span>
+                      </div>
+                      <Progress
+                        value={contract.value > 0 ? (totalPaid / contract.value) * 100 : 0}
+                        className="h-2.5 [&>div]:bg-green-500"
+                      />
+                    </div>
+
+                    {/* Payment breakdown chart */}
+                    <div className="mb-5 rounded-xl bg-gray-50 border border-gray-100 p-4">
+                      <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
+                        Payment Breakdown
+                      </p>
+                      <ResponsiveContainer width="100%" height={90}>
+                        <BarChart
+                          data={paymentChartData}
+                          layout="vertical"
+                          margin={{ top: 0, right: 16, left: 4, bottom: 0 }}
+                        >
+                          <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" horizontal={false} />
+                          <XAxis
+                            type="number"
+                            tickFormatter={v => `£${v / 1000}k`}
+                            tick={{ fontSize: 10, fill: "#9ca3af" }}
+                            axisLine={false}
+                            tickLine={false}
+                          />
+                          <YAxis
+                            type="category"
+                            dataKey="name"
+                            tick={{ fontSize: 11, fill: "#6b7280" }}
+                            axisLine={false}
+                            tickLine={false}
+                            width={80}
+                          />
+                          <RechartsTooltip
+                            formatter={(value: number) => [formatCurrency(value)]}
+                            contentStyle={{
+                              borderRadius: "8px",
+                              border: "1px solid #e5e7eb",
+                              fontSize: 12,
+                            }}
+                          />
+                          <Bar dataKey="value" fill={NAVY} radius={[0, 4, 4, 0]} maxBarSize={26} />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="bg-gray-50">
+                          <TableHead className="font-semibold text-gray-700">Description</TableHead>
+                          <TableHead className="font-semibold text-gray-700 text-right">Amount</TableHead>
+                          <TableHead className="font-semibold text-gray-700">Due Date</TableHead>
+                          <TableHead className="font-semibold text-gray-700">Status</TableHead>
+                          <TableHead className="font-semibold text-gray-700">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {contract.paymentSchedule.map((p: Payment) => (
+                          <TableRow key={p.id} className="hover:bg-gray-50">
+                            <TableCell className="font-medium text-gray-900">{p.description}</TableCell>
+                            <TableCell className="text-right font-semibold text-gray-900">
+                              {formatCurrency(p.amount)}
+                            </TableCell>
+                            <TableCell className="text-gray-600">{formatDate(p.dueDate)}</TableCell>
+                            <TableCell>{paymentStatusBadge(p.status)}</TableCell>
+                            <TableCell>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-7 text-xs text-[#1e3055] hover:bg-blue-50"
+                              >
+                                <FileText className="h-3 w-3 mr-1" /> Invoice
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </>
+                ) : (
+                  <div className="py-10 text-center">
+                    <PoundSterling className="h-8 w-8 text-gray-200 mx-auto mb-2" />
+                    <p className="text-sm text-gray-400">No payment schedule set up yet</p>
+                    <p className="text-xs text-gray-300 mt-0.5">Payment milestones will appear here once agreed with the buyer</p>
                   </div>
-                  <Progress
-                    value={(totalPaid / contract.value) * 100}
-                    className="h-2.5 [&>div]:bg-green-500"
-                  />
-                </div>
-
-                {/* Mini chart */}
-                <div className="mb-5 rounded-xl bg-gray-50 border border-gray-100 p-4">
-                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
-                    Payment Breakdown
-                  </p>
-                  <ResponsiveContainer width="100%" height={90}>
-                    <BarChart
-                      data={PAYMENT_CHART_DATA}
-                      layout="vertical"
-                      margin={{ top: 0, right: 16, left: 4, bottom: 0 }}
-                    >
-                      <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" horizontal={false} />
-                      <XAxis
-                        type="number"
-                        tickFormatter={v => `£${v / 1000}k`}
-                        tick={{ fontSize: 10, fill: "#9ca3af" }}
-                        axisLine={false}
-                        tickLine={false}
-                      />
-                      <YAxis
-                        type="category"
-                        dataKey="name"
-                        tick={{ fontSize: 11, fill: "#6b7280" }}
-                        axisLine={false}
-                        tickLine={false}
-                        width={80}
-                      />
-                      <RechartsTooltip
-                        formatter={(value: number) => [formatCurrency(value)]}
-                        contentStyle={{
-                          borderRadius: "8px",
-                          border: "1px solid #e5e7eb",
-                          fontSize: 12,
-                        }}
-                      />
-                      <Bar dataKey="value" fill={NAVY} radius={[0, 4, 4, 0]} maxBarSize={26} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-
-                <Table>
-                  <TableHeader>
-                    <TableRow className="bg-gray-50">
-                      <TableHead className="font-semibold text-gray-700">Description</TableHead>
-                      <TableHead className="font-semibold text-gray-700 text-right">Amount</TableHead>
-                      <TableHead className="font-semibold text-gray-700">Due Date</TableHead>
-                      <TableHead className="font-semibold text-gray-700">Status</TableHead>
-                      <TableHead className="font-semibold text-gray-700">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {contract.paymentSchedule.map((p: Payment) => (
-                      <TableRow key={p.id} className="hover:bg-gray-50">
-                        <TableCell className="font-medium text-gray-900">{p.description}</TableCell>
-                        <TableCell className="text-right font-semibold text-gray-900">
-                          {formatCurrency(p.amount)}
-                        </TableCell>
-                        <TableCell className="text-gray-600">{formatDate(p.dueDate)}</TableCell>
-                        <TableCell>{paymentStatusBadge(p.status)}</TableCell>
-                        <TableCell>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="h-7 text-xs text-[#1e3055] hover:bg-blue-50"
-                          >
-                            <FileText className="h-3 w-3 mr-1" /> Invoice
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-
-                <p className="mt-4 text-xs text-gray-400 italic">
-                  DEMO — Full payment schedule of £280,000 to be agreed at contract mobilisation (Aug 2026).
-                </p>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
@@ -577,30 +752,39 @@ export default function ContractDelivery() {
                 </Button>
               </CardHeader>
               <CardContent className="pt-0">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="bg-gray-50">
-                      <TableHead className="font-semibold text-gray-700">Description</TableHead>
-                      <TableHead className="font-semibold text-gray-700">Likelihood</TableHead>
-                      <TableHead className="font-semibold text-gray-700">Impact</TableHead>
-                      <TableHead className="font-semibold text-gray-700">Mitigation</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {contract.risks.map((r: Risk) => (
-                      <TableRow key={r.id} className="hover:bg-gray-50">
-                        <TableCell className="font-medium text-gray-900">{r.description}</TableCell>
-                        <TableCell>{levelBadge(r.likelihood)}</TableCell>
-                        <TableCell>{levelBadge(r.impact)}</TableCell>
-                        <TableCell className="text-sm text-gray-600 max-w-[300px]">
-                          {r.mitigation}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-
-                <RiskMatrix risks={contract.risks} />
+                {contract.risks.length > 0 ? (
+                  <>
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="bg-gray-50">
+                          <TableHead className="font-semibold text-gray-700">Description</TableHead>
+                          <TableHead className="font-semibold text-gray-700">Likelihood</TableHead>
+                          <TableHead className="font-semibold text-gray-700">Impact</TableHead>
+                          <TableHead className="font-semibold text-gray-700">Mitigation</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {contract.risks.map((r: Risk) => (
+                          <TableRow key={r.id} className="hover:bg-gray-50">
+                            <TableCell className="font-medium text-gray-900">{r.description}</TableCell>
+                            <TableCell>{levelBadge(r.likelihood)}</TableCell>
+                            <TableCell>{levelBadge(r.impact)}</TableCell>
+                            <TableCell className="text-sm text-gray-600 max-w-[300px]">
+                              {r.mitigation}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                    <RiskMatrix risks={contract.risks} />
+                  </>
+                ) : (
+                  <div className="py-10 text-center">
+                    <AlertTriangle className="h-8 w-8 text-gray-200 mx-auto mb-2" />
+                    <p className="text-sm text-gray-400">No risks logged yet</p>
+                    <p className="text-xs text-gray-300 mt-0.5">Use "Add Risk" to build your contract risk register</p>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
@@ -615,67 +799,14 @@ export default function ContractDelivery() {
                 </p>
               </CardHeader>
               <CardContent className="pt-0">
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                  {[
-                    {
-                      icon: <FileText className="h-5 w-5 text-blue-600" />,
-                      name: "Method Statement — Highway Repairs",
-                      bg: "bg-blue-50",
-                      border: "border-blue-100",
-                    },
-                    {
-                      icon: <AlertTriangle className="h-5 w-5 text-amber-500" />,
-                      name: "Health & Safety Plan 2026",
-                      bg: "bg-amber-50",
-                      border: "border-amber-100",
-                    },
-                    {
-                      icon: <CheckCircle2 className="h-5 w-5 text-green-600" />,
-                      name: "Public Liability Insurance — £10m",
-                      bg: "bg-green-50",
-                      border: "border-green-100",
-                    },
-                    {
-                      icon: <CheckCircle2 className="h-5 w-5 text-green-600" />,
-                      name: "ISO 9001 Quality Certificate",
-                      bg: "bg-green-50",
-                      border: "border-green-100",
-                    },
-                    {
-                      icon: <CheckCircle2 className="h-5 w-5 text-green-600" />,
-                      name: "ISO 14001 Environmental Certificate",
-                      bg: "bg-green-50",
-                      border: "border-green-100",
-                    },
-                    {
-                      icon: <FileText className="h-5 w-5 text-blue-600" />,
-                      name: "Contract Agreement — Trafford Council",
-                      bg: "bg-blue-50",
-                      border: "border-blue-100",
-                    },
-                  ].map((doc, i) => (
-                    <div
-                      key={i}
-                      className={`flex items-center gap-3 rounded-xl border ${doc.border} ${doc.bg} p-4`}
-                    >
-                      <div className="shrink-0">{doc.icon}</div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-900 leading-snug truncate">
-                          {doc.name}
-                        </p>
-                        <Badge className="mt-1 bg-green-100 text-green-700 border-green-200 hover:bg-green-100 text-xs">
-                          Valid
-                        </Badge>
-                      </div>
-                      <Button size="sm" variant="ghost" className="h-7 text-xs shrink-0 text-gray-500">
-                        View
-                      </Button>
-                    </div>
-                  ))}
+                <div className="py-8 text-center rounded-xl border border-dashed border-gray-200 bg-gray-50 mb-4">
+                  <FileText className="h-8 w-8 text-gray-200 mx-auto mb-2" />
+                  <p className="text-sm text-gray-400">No documents attached to this contract yet</p>
+                  <p className="text-xs text-gray-300 mt-0.5">Upload via the Compliance Vault and link them here</p>
                 </div>
 
                 {/* Link to Compliance Vault */}
-                <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between rounded-xl border border-dashed border-gray-200 bg-gray-50 p-4">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between rounded-xl border border-dashed border-gray-200 bg-gray-50 p-4">
                   <div className="flex items-center gap-3">
                     <PoundSterling className="h-5 w-5 text-gray-400 shrink-0" />
                     <div>
@@ -716,7 +847,7 @@ export default function ContractDelivery() {
                   </h3>
                   <p className="text-sm text-amber-700 mt-0.5">
                     Start renewal bid preparation 6 months early —{" "}
-                    <strong>October 2026</strong>. You have{" "}
+                    <strong>{renewalPrepDate}</strong>. You have{" "}
                     <strong>{daysToRenewal} days</strong> until renewal opens.
                   </p>
                   <p className="text-xs text-amber-600 mt-1.5 flex items-center gap-1.5">
