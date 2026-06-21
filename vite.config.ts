@@ -6,6 +6,14 @@ import { VitePWA } from "vite-plugin-pwa"
 export default defineConfig({
   plugins: [
     react(),
+    // Inject VITE_APP_URL into index.html so og:image uses the absolute production URL
+    {
+      name: 'html-env',
+      transformIndexHtml(html: string) {
+        const appUrl = process.env.VITE_APP_URL || 'https://bidiq-frontend.onrender.com'
+        return html.replace(/%VITE_APP_URL%/g, appUrl)
+      },
+    },
     VitePWA({
       registerType: "autoUpdate",
       includeAssets: ["favicon.svg"],
