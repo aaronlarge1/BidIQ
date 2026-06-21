@@ -1,0 +1,93 @@
+version: "3.9"
+
+# BidIQ Pro — Local Development Services
+# Run: docker-compose up -d
+# Stops and removes: docker-compose down -v
+
+services:
+
+  # ── PostgreSQL ──────────────────────────────────────────────
+  db:
+    image: postgres:15-alpine
+    container_name: bidiq-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: bidiq
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: bidiq_dev
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bidiq -d bidiq_dev"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── MeiliSearch ─────────────────────────────────────────────
+  search:
+    image: getmeili/meilisearch:v1.10
+    container_name: bidiq-meilisearch
+    restart: unless-stopped
+    environment:
+      MEILI_MASTER_KEY: dev-meilisearch-master-key
+      MEILI_ENV: development
+    ports:
+      - "7700:7700"
+    volumes:
+      - meilisearch_data:/meili_data
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:7700/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── MinIO (S3-compatible local storage) ─────────────────────
+  storage:
+    image: minio/minio:latest
+    container_name: bidiq-minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin123
+    ports:
+      - "9000:9000"   # S3 API
+      - "9001:9001"   # MinIO console UI
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+
+  # ── MailHog (local email catcher) ───────────────────────────
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: bidiq-mailhog
+    restart: unless-stopped
+    ports:
+      - "1025:1025"   # SMTP
+      - "8025:8025"   # Web UI at http://localhost:8025
+    logging:
+      driver: none
+
+volumes:
+  postgres_data:
+  meilisearch_data:
+  minio_data:
+
+# ── Usage Notes ─────────────────────────────────────────────
+# After starting, connect with:
+#
+#   PostgreSQL:  DATABASE_URL=postgresql://bidiq:password@localhost:5432/bidiq_dev
+#   MeiliSearch: MEILISEARCH_HOST=http://localhost:7700
+#                MEILISEARCH_API_KEY=dev-meilisearch-master-key
+#   MinIO S3:    S3_ENDPOINT=http://localhost:9000
+#                S3_BUCKET=bidiq-uploads
+#                S3_ACCESS_KEY_ID=minioadmin
+#                S3_SECRET_ACCESS_KEY=minioadmin123
+#                S3_REGION=us-east-1
+#   Email:       Point SMTP to localhost:1025, view at http://localhost:8025

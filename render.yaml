@@ -1,0 +1,98 @@
+# BidIQ Pro — Render Blueprint
+# This file auto-creates all services when you connect this repo as a Blueprint.
+# https://render.com/docs/blueprint-spec
+#
+# IMPORTANT: Do NOT put real secrets here.
+# After Render creates the services, go to each service → Environment
+# and manually add the secret values listed in DEPLOYMENT.md.
+
+services:
+
+  # ── Frontend — Static Site ───────────────────────────────────
+  - type: web
+    name: bidiq-frontend
+    env: static
+    buildCommand: npm install && npm run build
+    staticPublishPath: dist
+    pullRequestPreviewsEnabled: true
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    headers:
+      - path: /*
+        name: Cache-Control
+        value: public, max-age=0, must-revalidate
+      - path: /assets/*
+        name: Cache-Control
+        value: public, max-age=31536000, immutable
+    envVars:
+      - key: VITE_APP_NAME
+        value: BidIQ Pro
+      # Set VITE_APP_URL and VITE_API_URL manually in Render dashboard
+      # after you know the deployed URLs.
+      - key: VITE_DEMO_MODE
+        value: "true"           # Change to false for live launch
+      # Add these in Render dashboard (safe to expose — publishable key only):
+      # VITE_APP_URL
+      # VITE_API_URL
+      # VITE_STRIPE_PUBLISHABLE_KEY
+
+  # ── Backend — Web Service ─────────────────────────────────────
+  # Uncomment when the Node.js backend is scaffolded.
+  #
+  # - type: web
+  #   name: bidiq-api
+  #   env: node
+  #   buildCommand: npm install && npm run build:server
+  #   startCommand: node dist/server/index.js
+  #   healthCheckPath: /health
+  #   plan: starter
+  #   envVars:
+  #     - key: NODE_ENV
+  #       value: production
+  #     - key: DATABASE_URL
+  #       fromDatabase:
+  #         name: bidiq-db
+  #         property: connectionString
+  #     # Add all remaining secrets manually in Render dashboard:
+  #     # JWT_SECRET
+  #     # JWT_REFRESH_SECRET
+  #     # SESSION_SECRET
+  #     # OPENAI_API_KEY
+  #     # CONTRACTS_FINDER_API_KEY
+  #     # FIND_A_TENDER_API_KEY
+  #     # STRIPE_SECRET_KEY
+  #     # STRIPE_WEBHOOK_SECRET
+  #     # STRIPE_PRICE_STARTER
+  #     # STRIPE_PRICE_GROWTH
+  #     # STRIPE_PRICE_PROFESSIONAL
+  #     # STRIPE_PRICE_ENTERPRISE
+  #     # RESEND_API_KEY
+  #     # EMAIL_FROM
+  #     # MEILISEARCH_HOST
+  #     # MEILISEARCH_API_KEY
+  #     # S3_ENDPOINT
+  #     # S3_BUCKET
+  #     # S3_ACCESS_KEY_ID
+  #     # S3_SECRET_ACCESS_KEY
+  #     # S3_REGION
+  #     # ALLOWED_ORIGINS
+  #     - key: RATE_LIMIT_WINDOW_MS
+  #       value: "900000"
+  #     - key: RATE_LIMIT_MAX_REQUESTS
+  #       value: "100"
+  #     - key: BCRYPT_ROUNDS
+  #       value: "12"
+  #     - key: DEMO_MODE
+  #       value: "false"
+
+  # ── PostgreSQL Database ───────────────────────────────────────
+  # Uncomment when ready to add the backend.
+  #
+  # databases:
+  #   - name: bidiq-db
+  #     plan: starter        # Free tier — upgrade for production
+  #     databaseName: bidiq
+  #     user: bidiq
+  #     region: oregon       # Change to eu-west for UK data residency (requires paid plan)
