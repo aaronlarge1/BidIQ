@@ -80,19 +80,6 @@ const SCORE_BREAKDOWN: ScoreBreakdown[] = [
   { label: "Differentiation", score: 3, max: 10 },
 ]
 
-const DEMO_ANSWER =
-  `Greenfield Infrastructure Ltd will employ a proven methodology for carriageway resurfacing that aligns fully with Highways England's Design Manual for Roads and Bridges (DMRB) and Manual of Contract Documents for Highway Works (MCHW). Our approach has been refined across over 40 National Highways schemes, delivering consistent quality outcomes within programme and budget.
-
-Our technical approach encompasses four key phases: survey and investigation, preparation works, surfacing, and quality assurance sign-off.
-
-Phase 1 — Survey & Investigation: Prior to mobilisation, our in-house survey team will conduct a comprehensive condition assessment using high-speed road survey (HSRS) data and visual inspection aligned to HD 29/08. Pavement cores will be taken at representative intervals to confirm existing composition and inform mix design.
-
-Phase 2 — Preparation Works: All defective areas will be planed and patched in advance of bulk resurfacing. We will install temporary traffic management to Chapter 8 standards, minimising disruption and maintaining two-way flow wherever feasible. Our dedicated traffic management team holds NHSS 12 accreditation.
-
-Phase 3 — Surfacing: Hot-rolled asphalt or Stone Mastic Asphalt (SMA) will be laid using our Vogele Super 1800-3i paver, achieving consistent mat thickness within +/-5mm tolerance. All materials will be sourced from our Highways England-approved supplier framework.
-
-Phase 4 — Quality Assurance: Testing will follow MCHW Series 900 protocols, with cores taken at the frequency specified in the contract. Results will be reported in real-time via our site management platform, with all non-conformances escalated within two hours.`
-
 const INITIAL_SUGGESTIONS: AISuggestion[] = [
   {
     id: 1,
@@ -175,7 +162,7 @@ function ScoreRing({ score }: { score: number }) {
 
 export default function BidWorkspace() {
   const [activeSection, setActiveSection] = useState<number>(2)
-  const [answerText, setAnswerText] = useState(DEMO_ANSWER)
+  const [answerText, setAnswerText] = useState("")
   const [suggestions, setSuggestions] = useState<AISuggestion[]>(INITIAL_SUGGESTIONS)
   const [isImproving, setIsImproving] = useState(false)
 

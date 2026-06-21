@@ -1,8 +1,9 @@
 import { useState, useRef, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { Bot, X, Send, Loader2, ChevronDown } from "lucide-react"
+import { Bot, X, Send, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
+import { useAiGenerateAnswer } from "@/hooks/useApi"
 
 interface Message {
   id: string
@@ -19,27 +20,16 @@ const QUICK_PROMPTS = [
   "Explain PAS 91 requirements",
 ]
 
-const DEMO_RESPONSES: Record<string, string> = {
-  default: "Great question! Based on your company profile, I can see you're well-positioned for highways and maintenance contracts. Your readiness score of 72% is solid — the main gap is Cyber Essentials, which is now required on many public contracts. Would you like me to walk you through getting that sorted?",
-  "bid": "Yes — I recommend bidding on the A57 Resurfacing contract. Here's why:\n\n✅ Your eligibility score is 82% — excellent match\n✅ You have relevant experience (M60, Trafford contracts)\n✅ It's SME-flagged with 20% social value weighting\n⚠️ You'll need to strengthen your social value section\n\nWant me to help draft your bid response?",
-  "documents": "You have 5 compliance gaps:\n\n🔴 Cyber Essentials certificate — **missing**\n🔴 GDPR Policy — **expired** (needs updating)\n🟡 Professional Indemnity — expiring 31 Dec 2026\n\nI recommend tackling the GDPR policy first (2-3 hours), then applying for Cyber Essentials (4–6 weeks). This will unlock NHS and local authority contracts you're currently locked out of.",
-  "social": "To score higher on social value:\n\n1. **Local employment** — Commit a % of workforce from the contract area\n2. **Apprenticeships** — Even 1 apprenticeship scores well\n3. **Community projects** — Link to local charities or initiatives\n4. **Supply chain** — Commit to using local SME subcontractors\n5. **Carbon reduction** — Set a measurable target\n\nMost buyers use the Social Value Model (SVM). Shall I generate a tender-ready social value response for you?",
-}
-
-function getResponse(input: string): string {
-  const lower = input.toLowerCase()
-  if (lower.includes("bid") || lower.includes("a57")) return DEMO_RESPONSES["bid"]
-  if (lower.includes("document") || lower.includes("missing")) return DEMO_RESPONSES["documents"]
-  if (lower.includes("social")) return DEMO_RESPONSES["social"]
-  return DEMO_RESPONSES["default"]
-}
-
 interface AIAssistantProps {
   open: boolean
   onClose: () => void
+  question?: string
+  tenderTitle?: string
+  buyerType?: string
+  bidId?: string
 }
 
-export default function AIAssistant({ open, onClose }: AIAssistantProps) {
+export default function AIAssistant({ open, onClose, question, tenderTitle, buyerType, bidId }: AIAssistantProps) {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "welcome",
@@ -48,25 +38,43 @@ export default function AIAssistant({ open, onClose }: AIAssistantProps) {
     }
   ])
   const [input, setInput] = useState("")
-  const [loading, setLoading] = useState(false)
   const bottomRef = useRef<HTMLDivElement>(null)
+  const generateAnswer = useAiGenerateAnswer()
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" })
   }, [messages])
 
-  function send(text?: string) {
+  const loading = generateAnswer.isPending
+
+  async function send(text?: string) {
     const content = text ?? input.trim()
     if (!content) return
     setInput("")
     const userMsg: Message = { id: Date.now().toString(), role: "user", content }
     setMessages(prev => [...prev, userMsg])
-    setLoading(true)
-    setTimeout(() => {
-      const reply: Message = { id: Date.now().toString() + "r", role: "assistant", content: getResponse(content) }
+
+    try {
+      const result = await generateAnswer.mutateAsync({
+        question: content,
+        tenderTitle: tenderTitle ?? question,
+        buyerType,
+        bidId,
+      })
+      const reply: Message = {
+        id: Date.now().toString() + "r",
+        role: "assistant",
+        content: result.answer,
+      }
       setMessages(prev => [...prev, reply])
-      setLoading(false)
-    }, 900)
+    } catch {
+      const errorMsg: Message = {
+        id: Date.now().toString() + "e",
+        role: "assistant",
+        content: "Sorry, I couldn't get a response right now. Please try again in a moment.",
+      }
+      setMessages(prev => [...prev, errorMsg])
+    }
   }
 
   return (

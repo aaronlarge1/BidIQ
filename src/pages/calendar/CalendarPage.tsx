@@ -8,9 +8,9 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Separator } from "@/components/ui/separator"
-import { DEMO_CALENDAR } from "@/lib/demo-data"
 import { formatDate, daysUntil } from "@/lib/utils"
 import type { CalendarEvent } from "@/types"
+import { useCalendarEvents } from "@/hooks/useApi"
 
 // ─── Event colour config ──────────────────────────────────────────────────────
 
@@ -67,9 +67,9 @@ const JULY_START_DOW = 3
 const JULY_DAYS = 31
 const DAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
 
-function getJulyEventsByDay(): Record<number, CalendarEvent[]> {
+function getJulyEventsByDay(events: CalendarEvent[]): Record<number, CalendarEvent[]> {
   const map: Record<number, CalendarEvent[]> = {}
-  DEMO_CALENDAR.forEach((evt) => {
+  events.forEach((evt) => {
     const d = new Date(evt.date)
     if (d.getFullYear() === 2026 && d.getMonth() === 6) {
       const day = d.getDate()
@@ -128,10 +128,13 @@ export default function CalendarPage() {
   const [selectedDay, setSelectedDay] = useState<number | null>(null)
   const [activeTab, setActiveTab] = useState("all")
 
-  const julyEvents = getJulyEventsByDay()
+  const { data: calendarData } = useCalendarEvents()
+  const events: CalendarEvent[] = calendarData ?? []
+
+  const julyEvents = getJulyEventsByDay(events)
 
   // All events sorted ascending
-  const allSorted = [...DEMO_CALENDAR].sort(
+  const allSorted = [...events].sort(
     (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
   )
 
@@ -162,7 +165,6 @@ export default function CalendarPage() {
           <div>
             <div className="flex items-center gap-3">
               <h1 className="text-2xl font-bold text-gray-900">Procurement Calendar</h1>
-              <Badge variant="outline" className="text-xs">DEMO</Badge>
             </div>
             <p className="mt-1 text-sm text-gray-500">
               Never miss a deadline, renewal or opportunity again
@@ -373,11 +375,19 @@ export default function CalendarPage() {
                 <CardTitle className="text-sm font-semibold text-gray-900">Coming Up Next</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3 pt-0">
-                {[...DEMO_CALENDAR]
-                  .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-                  .filter((e) => daysUntil(e.date) >= 0)
-                  .slice(0, 5)
-                  .map((evt) => {
+                {(() => {
+                  const upcoming = [...events]
+                    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+                    .filter((e) => daysUntil(e.date) >= 0)
+                    .slice(0, 5)
+                  if (upcoming.length === 0) {
+                    return (
+                      <p className="text-xs text-gray-400">
+                        No upcoming events. They'll appear here when you create bids.
+                      </p>
+                    )
+                  }
+                  return upcoming.map((evt) => {
                     const days = daysUntil(evt.date)
                     const cfg = EVENT_COLORS[evt.type]
                     return (
@@ -396,7 +406,8 @@ export default function CalendarPage() {
                         </span>
                       </div>
                     )
-                  })}
+                  })
+                })()}
               </CardContent>
             </Card>
           </div>
@@ -409,7 +420,6 @@ export default function CalendarPage() {
               <CardTitle className="text-base font-semibold text-gray-900">
                 Upcoming Events — Next 90 Days
               </CardTitle>
-              <Badge variant="outline" className="text-xs">DEMO</Badge>
             </div>
           </CardHeader>
           <CardContent className="pt-4">
@@ -429,10 +439,10 @@ export default function CalendarPage() {
                     <div className="rounded-xl border border-dashed border-gray-200 bg-gray-50 py-14 text-center">
                       <Calendar className="mx-auto mb-3 h-10 w-10 text-gray-300" />
                       <p className="text-sm font-medium text-gray-500">
-                        No events in this period.
+                        No deadlines yet
                       </p>
                       <p className="mt-1 text-xs text-gray-400">
-                        Tender deadlines and renewals will appear here automatically.
+                        They'll appear here when you create bids
                       </p>
                     </div>
                   ) : (
@@ -540,10 +550,6 @@ export default function CalendarPage() {
           </CardContent>
         </Card>
 
-        {/* ─── Demo footer ──────────────────────────────────────────────── */}
-        <p className="mt-8 text-center text-xs text-gray-400">
-          All data shown is demo data for Greenfield Infrastructure Ltd. Live tender deadlines and document renewals sync automatically.
-        </p>
 
       </div>
     </div>

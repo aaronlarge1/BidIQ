@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Separator } from "@/components/ui/separator"
-import { DEMO_READINESS, DEMO_COMPANY } from "@/lib/demo-data"
+import { useReadiness, useCompany } from "@/hooks/useApi"
 import { ROUTES } from "@/lib/constants"
 
 // ─── Animation helpers ────────────────────────────────────────────────────────
@@ -161,15 +161,39 @@ const BENCHMARK_ROWS = [
   { area: "ESG & Environment", yourScore: 60, industryAvg: 47, top10: 86 },
 ]
 
-// ─── Radial chart data ────────────────────────────────────────────────────────
-
-const RADIAL_DATA = [{ name: "Score", value: DEMO_READINESS.overall, fill: "#16a34a" }]
-
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function ReadinessCentre() {
+  const { data: readiness, isLoading, isError } = useReadiness()
+  const { data: companyData } = useCompany()
+
+  const companyName = companyData?.name ?? "Your Company"
+
+  // Empty / loading / error states
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-slate-50 p-4 md:p-8 flex items-center justify-center">
+        <p className="text-slate-500 text-sm">Loading readiness profile…</p>
+      </div>
+    )
+  }
+
+  if (isError || !readiness) {
+    return (
+      <div className="min-h-screen bg-slate-50 p-4 md:p-8 flex items-center justify-center">
+        <div className="text-center space-y-2">
+          <ShieldCheck className="h-10 w-10 text-slate-300 mx-auto" />
+          <p className="text-slate-700 font-semibold">Complete your company profile to see your readiness score</p>
+          <p className="text-slate-400 text-sm">Once your profile is set up, your procurement readiness score will appear here.</p>
+        </div>
+      </div>
+    )
+  }
+
+  const RADIAL_DATA = [{ name: "Score", value: readiness.overall, fill: "#16a34a" }]
+
   // Collect all actionable items across areas
-  const allActions = DEMO_READINESS.areas.flatMap((area) =>
+  const allActions = readiness.areas.flatMap((area) =>
     area.actions.map((action, idx) => ({
       areaId: area.id,
       areaName: area.name,
@@ -187,6 +211,10 @@ export default function ReadinessCentre() {
     return order[a.status] - order[b.status]
   })
 
+  const readyCount = readiness.areas.filter((a) => a.status === "green").length
+  const amberCount = readiness.areas.filter((a) => a.status === "amber").length
+  const redCount = readiness.areas.filter((a) => a.status === "red").length
+
   return (
     <div className="min-h-screen bg-slate-50 p-4 md:p-8 space-y-8">
 
@@ -196,11 +224,12 @@ export default function ReadinessCentre() {
           <div className="flex items-center gap-3 mb-1">
             <ShieldCheck className="h-7 w-7 text-green-600" />
             <h1 className="text-2xl font-bold text-slate-900">Procurement Readiness Centre</h1>
-            <Badge className="bg-slate-100 text-slate-600 border border-slate-200 text-xs font-medium">DEMO</Badge>
           </div>
           <p className="text-sm text-slate-500 ml-10">
-            Overall score: <span className="font-semibold text-slate-700">72/100</span>
-            {" · "}Last checked <span className="font-semibold text-slate-700">21 June 2026</span>
+            Overall score: <span className="font-semibold text-slate-700">{readiness.overall}/100</span>
+            {readiness.lastChecked && (
+              <>{" · "}Last checked <span className="font-semibold text-slate-700">{new Date(readiness.lastChecked).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}</span></>
+            )}
           </p>
           <div className="ml-10 mt-2 flex items-center gap-2 text-sm">
             <CreditCard className="h-4 w-4 text-slate-400" />
@@ -248,7 +277,7 @@ export default function ReadinessCentre() {
                 </ResponsiveContainer>
                 {/* Centered number overlay */}
                 <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                  <span className="text-4xl font-extrabold text-slate-900 leading-none">72</span>
+                  <span className="text-4xl font-extrabold text-slate-900 leading-none">{readiness.overall}</span>
                   <span className="text-sm text-slate-500 mt-0.5">/ 100</span>
                 </div>
               </div>
@@ -273,15 +302,15 @@ export default function ReadinessCentre() {
                 </div>
                 <div className="grid grid-cols-3 gap-4 pt-2">
                   <div className="text-center">
-                    <p className="text-2xl font-bold text-green-600">5</p>
+                    <p className="text-2xl font-bold text-green-600">{readyCount}</p>
                     <p className="text-xs text-slate-500 mt-0.5">Areas ready</p>
                   </div>
                   <div className="text-center">
-                    <p className="text-2xl font-bold text-amber-500">4</p>
+                    <p className="text-2xl font-bold text-amber-500">{amberCount}</p>
                     <p className="text-xs text-slate-500 mt-0.5">Need attention</p>
                   </div>
                   <div className="text-center">
-                    <p className="text-2xl font-bold text-red-500">0</p>
+                    <p className="text-2xl font-bold text-red-500">{redCount}</p>
                     <p className="text-xs text-slate-500 mt-0.5">Blocking</p>
                   </div>
                 </div>
@@ -298,7 +327,7 @@ export default function ReadinessCentre() {
           <p className="text-sm text-slate-500">9 procurement readiness categories assessed against buyer requirements</p>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {DEMO_READINESS.areas.map((area, i) => (
+          {readiness.areas.map((area, i) => (
             <motion.div key={area.id} {...fadeUp(0.2 + i * 0.04)}>
               <Card className={`border ${statusCardClass(area.status)} h-full`}>
                 <CardContent className="pt-4 pb-4 space-y-3">
@@ -473,7 +502,7 @@ export default function ReadinessCentre() {
               <CardHeader>
                 <CardTitle className="text-base">Procurement Growth Roadmap</CardTitle>
                 <CardDescription>
-                  Your journey from procurement-ready to market-leading supplier. Current score: 72/100.
+                  Your journey from procurement-ready to market-leading supplier. Current score: {readiness.overall}/100.
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -534,9 +563,9 @@ export default function ReadinessCentre() {
                           <div className="pt-2 space-y-1">
                             <div className="flex justify-between text-xs text-green-700">
                               <span>Progress within stage</span>
-                              <span className="font-semibold">72% / 70–85 target</span>
+                              <span className="font-semibold">{readiness.overall}% / 70–85 target</span>
                             </div>
-                            <Progress value={((72 - 40) / (70 - 40)) * 100} className="h-1.5" />
+                            <Progress value={((readiness.overall - 40) / (70 - 40)) * 100} className="h-1.5" />
                           </div>
                         )}
                       </div>
@@ -559,7 +588,7 @@ export default function ReadinessCentre() {
                 <CardTitle className="text-base">Benchmarking</CardTitle>
                 <CardDescription>
                   How does{" "}
-                  <span className="font-semibold text-slate-700">{DEMO_COMPANY.name}</span>{" "}
+                  <span className="font-semibold text-slate-700">{companyName}</span>{" "}
                   compare to similar SMEs in highways and construction?
                 </CardDescription>
               </CardHeader>
@@ -604,7 +633,7 @@ export default function ReadinessCentre() {
                         <td className="py-3 pr-4 font-bold text-slate-900">Overall</td>
                         <td className="py-3 px-4 text-center">
                           <span className="inline-flex items-center justify-center rounded-full px-3 py-1 text-sm font-bold bg-green-100 text-green-700">
-                            72
+                            {readiness.overall}
                           </span>
                         </td>
                         <td className="py-3 px-4 text-center font-bold text-slate-600">61</td>
@@ -640,7 +669,7 @@ export default function ReadinessCentre() {
               {/* Score display */}
               <div className="flex items-center gap-4 shrink-0">
                 <div className="flex flex-col items-center justify-center w-20 h-20 rounded-full bg-white/10 border-2 border-white/30">
-                  <span className="text-3xl font-extrabold leading-none">{DEMO_READINESS.creditScore}</span>
+                  <span className="text-3xl font-extrabold leading-none">{readiness.creditScore}</span>
                   <span className="text-xs text-white/70 mt-0.5">/ 100</span>
                 </div>
                 <div>

@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Progress } from "@/components/ui/progress"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Separator } from "@/components/ui/separator"
-import { DEMO_PARTNERS, DEMO_COMPANY } from "@/lib/demo-data"
+import { usePartners, useCompany } from "@/hooks/useApi"
 import { formatCurrency } from "@/lib/utils"
 import type { Partner } from "@/types"
 
@@ -102,7 +102,6 @@ function PartnerCard({
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-0.5">
               <h3 className="font-semibold text-gray-900 text-sm truncate">{partner.name}</h3>
-              <Badge className="bg-[#1e3055]/10 text-[#1e3055] text-[10px] font-medium shrink-0">DEMO</Badge>
             </div>
             <Badge variant="outline" className="text-[10px] font-medium text-gray-600 border-gray-200">
               {partner.sector}
@@ -187,7 +186,11 @@ export default function ConsortiumBuilder() {
   const [invitedId, setInvitedId] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState("find")
 
-  const filteredPartners = DEMO_PARTNERS.filter((p) => {
+  const { data: partners = [] } = usePartners()
+  const { data: company } = useCompany()
+  const companyName = company?.name ?? "Your Company"
+
+  const filteredPartners = partners.filter((p) => {
     if (!search) return true
     const q = search.toLowerCase()
     return (
@@ -199,7 +202,7 @@ export default function ConsortiumBuilder() {
     )
   })
 
-  const selectedPartner = DEMO_PARTNERS.find((p) => p.id === selectedId) ?? null
+  const selectedPartner = partners.find((p) => p.id === selectedId) ?? null
   const selectedFills = selectedId ? PARTNER_FILLS[selectedId] : null
 
   function handleInvite(partnerId: string) {
@@ -214,7 +217,6 @@ export default function ConsortiumBuilder() {
         <div>
           <div className="flex items-center gap-2 mb-1">
             <h1 className="text-2xl font-bold text-gray-900">Consortium Builder</h1>
-            <Badge className="bg-[#1e3055] text-white text-xs">DEMO</Badge>
           </div>
           <p className="text-gray-500 text-sm">
             Find partners to bid for larger contracts or fill capability gaps
@@ -222,7 +224,7 @@ export default function ConsortiumBuilder() {
         </div>
         <div className="flex items-center gap-2 rounded-xl bg-blue-50 border border-blue-200 px-4 py-2">
           <Users className="h-4 w-4 text-blue-600" />
-          <span className="text-sm font-medium text-blue-700">3 suggested partners</span>
+          <span className="text-sm font-medium text-blue-700">{partners.length} suggested partner{partners.length !== 1 ? "s" : ""}</span>
         </div>
       </div>
 
@@ -294,8 +296,7 @@ export default function ConsortiumBuilder() {
           </div>
 
           <p className="text-xs text-gray-500">
-            Showing {filteredPartners.length} suggested partner{filteredPartners.length !== 1 ? "s" : ""}{" "}
-            <span className="font-medium">(DEMO)</span>
+            Showing {filteredPartners.length} suggested partner{filteredPartners.length !== 1 ? "s" : ""}
           </p>
 
           {/* Partner cards */}
@@ -312,13 +313,19 @@ export default function ConsortiumBuilder() {
             {filteredPartners.length === 0 && (
               <div className="col-span-3 text-center py-12 text-gray-500">
                 <Search className="h-8 w-8 mx-auto mb-2 text-gray-300" />
-                <p className="text-sm">No partners found matching "{search}"</p>
-                <button
-                  className="mt-2 text-xs text-[#1e3055] underline"
-                  onClick={() => setSearch("")}
-                >
-                  Clear search
-                </button>
+                {search ? (
+                  <>
+                    <p className="text-sm">No partners found matching "{search}"</p>
+                    <button
+                      className="mt-2 text-xs text-[#1e3055] underline"
+                      onClick={() => setSearch("")}
+                    >
+                      Clear search
+                    </button>
+                  </>
+                ) : (
+                  <p className="text-sm">No consortium partners yet — add companies you collaborate with on bids</p>
+                )}
               </div>
             )}
           </div>
@@ -327,7 +334,7 @@ export default function ConsortiumBuilder() {
           {invitedId && (
             <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 rounded-xl bg-[#1e3055] text-white px-5 py-3 shadow-xl text-sm font-medium">
               <CheckCircle2 className="h-4 w-4 text-green-400" />
-              Invitation sent to {DEMO_PARTNERS.find(p => p.id === invitedId)?.name}
+              Invitation sent to {partners.find(p => p.id === invitedId)?.name}
             </div>
           )}
 
@@ -341,7 +348,7 @@ export default function ConsortiumBuilder() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <h3 className="font-semibold text-gray-900 text-sm mb-1">
-                      Capability Coverage — {DEMO_COMPANY.name} + {selectedPartner.name}
+                      Capability Coverage — {companyName} + {selectedPartner.name}
                     </h3>
                     <p className="text-xs text-gray-600 mb-3">
                       Adding {selectedPartner.name} fills: {selectedFills.gaps.join(", ")}

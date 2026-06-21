@@ -16,7 +16,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table"
-import { DEMO_CONTRACTS } from "@/lib/demo-data"
+import { useContracts } from "@/hooks/useApi"
 import { formatCurrency, formatDate, daysUntil } from "@/lib/utils"
 import type { Milestone, KPI, Payment, Risk } from "@/types"
 
@@ -183,21 +183,22 @@ const PAYMENT_CHART_DATA = [
 
 export default function ContractDelivery() {
   const [activeTab, setActiveTab] = useState("milestones")
-  const contract = DEMO_CONTRACTS[0]
+  const { data: contracts = [] } = useContracts()
+  const contract = contracts[0] ?? null
 
-  const totalDays = Math.round(
+  const totalDays = contract ? Math.round(
     (new Date(contract.endDate).getTime() - new Date(contract.startDate).getTime()) /
     (1000 * 60 * 60 * 24),
-  )
-  const daysElapsed = Math.max(0, Math.round(
+  ) : 0
+  const daysElapsed = contract ? Math.max(0, Math.round(
     (Date.now() - new Date(contract.startDate).getTime()) / (1000 * 60 * 60 * 24),
-  ))
-  const progressPct = Math.min(100, Math.round((daysElapsed / totalDays) * 100))
-  const daysToRenewal = daysUntil(contract.renewalDate)
-  const completedMilestones = contract.milestones.filter(m => m.status === "complete").length
-  const totalPaid = contract.paymentSchedule
-    .filter(p => p.status === "paid")
-    .reduce((s, p) => s + p.amount, 0)
+  )) : 0
+  const progressPct = totalDays > 0 ? Math.min(100, Math.round((daysElapsed / totalDays) * 100)) : 0
+  const daysToRenewal = contract ? daysUntil(contract.renewalDate) : 0
+  const completedMilestones = contract ? contract.milestones.filter(m => m.status === "complete").length : 0
+  const totalPaid = contract
+    ? contract.paymentSchedule.filter(p => p.status === "paid").reduce((s, p) => s + p.amount, 0)
+    : 0
 
   return (
     <div className="min-h-screen bg-gray-50 pb-16">
@@ -211,9 +212,6 @@ export default function ContractDelivery() {
               <div>
                 <div className="flex items-center gap-2 mb-1">
                   <h1 className="text-xl font-bold sm:text-2xl">Contract Delivery Hub</h1>
-                  <Badge className="border-blue-400/40 bg-blue-400/20 text-blue-100 hover:bg-blue-400/20">
-                    DEMO
-                  </Badge>
                 </div>
                 <p className="text-sm text-blue-200">
                   Track milestones, KPIs, payments and risks for your active contracts
@@ -222,19 +220,32 @@ export default function ContractDelivery() {
               <div className="flex flex-wrap items-center gap-3">
                 <div className="rounded-xl border border-white/20 bg-white/10 px-4 py-2 text-center">
                   <p className="text-xs text-blue-200">Active Contracts</p>
-                  <p className="text-2xl font-bold">1</p>
+                  <p className="text-2xl font-bold">{contracts.length}</p>
                 </div>
-                <div className="rounded-xl border border-white/20 bg-white/10 px-4 py-2 text-center">
-                  <p className="text-xs text-blue-200">Total Value</p>
-                  <p className="text-2xl font-bold">£280k</p>
-                </div>
+                {contract && (
+                  <div className="rounded-xl border border-white/20 bg-white/10 px-4 py-2 text-center">
+                    <p className="text-xs text-blue-200">Total Value</p>
+                    <p className="text-2xl font-bold">{formatCurrency(contract.value)}</p>
+                  </div>
+                )}
               </div>
             </div>
           </div>
         </div>
 
+        {/* ─── Empty state ──────────────────────────────────────────────── */}
+        {!contract && (
+          <div className="rounded-xl border border-dashed border-gray-200 bg-white p-12 text-center mb-6">
+            <FileText className="h-10 w-10 text-gray-300 mx-auto mb-3" />
+            <p className="text-sm font-medium text-gray-500">No active contracts yet</p>
+            <p className="text-xs text-gray-400 mt-1">
+              No active contracts yet — they'll appear here when you win and record a contract
+            </p>
+          </div>
+        )}
+
         {/* ─── Contract Overview Card ────────────────────────────────────── */}
-        <Card className="mb-6 bg-white shadow-sm border-l-4 border-l-green-500">
+        {contract && <Card className="mb-6 bg-white shadow-sm border-l-4 border-l-green-500">
           <CardContent className="p-6">
             <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
               <div className="flex-1">
@@ -243,7 +254,6 @@ export default function ContractDelivery() {
                   <Badge className="bg-green-100 text-green-700 border-green-200 hover:bg-green-100">
                     ACTIVE
                   </Badge>
-                  <Badge variant="outline" className="text-xs">DEMO</Badge>
                 </div>
                 <p className="text-sm text-gray-500 mb-5">Buyer: {contract.buyer}</p>
 
@@ -304,14 +314,15 @@ export default function ContractDelivery() {
                 <div className="rounded-xl bg-gray-50 border border-gray-100 p-3 text-center min-w-[100px]">
                   <p className="text-xs text-gray-400 mb-0.5">Invoiced</p>
                   <p className="text-2xl font-bold text-gray-900">{formatCurrency(totalPaid)}</p>
-                  <p className="text-xs text-gray-400">of £280k</p>
+                  <p className="text-xs text-gray-400">of {formatCurrency(contract.value)}</p>
                 </div>
               </div>
             </div>
           </CardContent>
-        </Card>
+        </Card>}
 
         {/* ─── Tabs ─────────────────────────────────────────────────────── */}
+        {contract && <>
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="mb-6 h-auto flex-wrap gap-1 bg-white border border-gray-200 shadow-sm rounded-xl p-1.5">
             {[
@@ -590,10 +601,6 @@ export default function ContractDelivery() {
                 </Table>
 
                 <RiskMatrix risks={contract.risks} />
-
-                <p className="mt-4 text-xs text-gray-400 italic">
-                  DEMO — Risk register to be reviewed at monthly contract meetings.
-                </p>
               </CardContent>
             </Card>
           </TabsContent>
@@ -727,11 +734,7 @@ export default function ContractDelivery() {
           </CardContent>
         </Card>
 
-        {/* ─── Footer notice ─────────────────────────────────────────────── */}
-        <p className="mt-8 text-center text-xs text-gray-400">
-          All data shown is demo data for Greenfield Infrastructure Ltd ·{" "}
-          Trafford Council Highway Repairs 2025
-        </p>
+        </>}
 
       </div>
     </div>

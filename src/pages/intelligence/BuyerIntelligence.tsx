@@ -17,7 +17,7 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table"
 import { Separator } from "@/components/ui/separator"
-import { DEMO_BUYERS } from "@/lib/demo-data"
+import { useBuyers, useCompany } from "@/hooks/useApi"
 import { formatCurrency, formatDate } from "@/lib/utils"
 import type { Buyer } from "@/types"
 
@@ -51,27 +51,6 @@ const NH_SPEND_DATA = [
   { year: "2024", spend: 2.6 },
   { year: "2025", spend: 2.8 },
   { year: "2026*", spend: 3.1 },
-]
-
-// ─── Demo relationship contacts ───────────────────────────────────────────────
-
-const DEMO_CONTACTS = [
-  {
-    id: "c-001",
-    name: "Sarah Johnson",
-    role: "Category Manager",
-    org: "National Highways North",
-    source: "Meet-the-buyer event, March 2026",
-    email: "s.johnson@nationalhighways.co.uk",
-  },
-  {
-    id: "c-002",
-    name: "David Clarke",
-    role: "Framework Manager, SME Gateway",
-    org: "National Highways",
-    source: "Framework briefing day, January 2026",
-    email: "d.clarke@nationalhighways.co.uk",
-  },
 ]
 
 // ─── Upcoming opportunities for NH ───────────────────────────────────────────
@@ -142,15 +121,17 @@ function BuyerCard({
   buyer,
   selected,
   onClick,
+  companyName,
 }: {
   buyer: Buyer
   selected: boolean
   onClick: () => void
+  companyName: string
 }) {
   const typeMeta = buyerTypeMeta[buyer.type] ?? { label: buyer.type, className: "bg-gray-100 text-gray-700" }
-  const previousOwnAwards = buyer.previousAwards.filter(
-    (a) => a.supplier === "Greenfield Infrastructure Ltd"
-  )
+  const previousOwnAwards = companyName
+    ? buyer.previousAwards.filter((a) => a.supplier === companyName)
+    : []
   const avgValue =
     buyer.previousAwards.length > 0
       ? buyer.previousAwards.reduce((sum, a) => sum + a.value, 0) / buyer.previousAwards.length
@@ -177,7 +158,6 @@ function BuyerCard({
                 <Trophy className="h-3 w-3" /> Known to us
               </span>
             )}
-            <Badge variant="outline" className="text-xs">DEMO</Badge>
           </div>
           <h3 className="text-base font-bold text-gray-900 leading-tight">{buyer.name}</h3>
         </div>
@@ -226,7 +206,7 @@ function BuyerCard({
 
 // ─── Buyer Detail Panel ───────────────────────────────────────────────────────
 
-function BuyerDetailPanel({ buyer }: { buyer: Buyer }) {
+function BuyerDetailPanel({ buyer, companyName }: { buyer: Buyer; companyName: string }) {
   const typeMeta = buyerTypeMeta[buyer.type] ?? { label: buyer.type, className: "bg-gray-100 text-gray-700" }
   const isNH = buyer.id === "by-001"
 
@@ -244,7 +224,6 @@ function BuyerDetailPanel({ buyer }: { buyer: Buyer }) {
                 <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${typeMeta.className}`}>
                   {typeMeta.label}
                 </span>
-                <Badge variant="outline" className="text-xs">DEMO</Badge>
               </div>
               <h2 className="text-xl font-bold text-gray-900">{buyer.name}</h2>
               <p className="text-sm text-gray-500 flex items-center gap-1 mt-0.5">
@@ -304,7 +283,7 @@ function BuyerDetailPanel({ buyer }: { buyer: Buyer }) {
                 </TableHeader>
                 <TableBody>
                   {buyer.previousAwards.map((award, i) => {
-                    const isOurs = award.supplier === "Greenfield Infrastructure Ltd"
+                    const isOurs = companyName ? award.supplier === companyName : false
                     return (
                       <TableRow
                         key={i}
@@ -469,16 +448,10 @@ function BuyerDetailPanel({ buyer }: { buyer: Buyer }) {
             </div>
 
             <div className="space-y-3">
-              {(isNH ? DEMO_CONTACTS : [
-                {
-                  id: "stk-c-001",
-                  name: "Paul Fletcher",
-                  role: "Highways Contracts Manager",
-                  org: "Stockport Metropolitan Borough Council",
-                  source: "Current contract relationship",
-                  email: "p.fletcher@stockport.gov.uk",
-                },
-              ]).map((contact) => (
+              <p className="text-xs text-gray-500 bg-gray-50 border border-gray-100 rounded-lg px-3 py-2">
+                No contacts added yet. Use the Add Contact button to record buyer contacts after meet-the-buyer events.
+              </p>
+              {([] as { id: string; name: string; role: string; org: string; source: string; email: string }[]).map((contact) => (
                 <div
                   key={contact.id}
                   className="flex items-start gap-4 rounded-xl border border-gray-100 bg-white p-4 shadow-sm"
@@ -489,7 +462,6 @@ function BuyerDetailPanel({ buyer }: { buyer: Buyer }) {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <p className="font-semibold text-sm text-gray-900">{contact.name}</p>
-                      <Badge variant="outline" className="text-xs">DEMO</Badge>
                     </div>
                     <p className="text-xs text-gray-600">{contact.role}</p>
                     <p className="text-xs text-gray-400">{contact.org}</p>
@@ -551,7 +523,7 @@ function BuyerDetailPanel({ buyer }: { buyer: Buyer }) {
                 </div>
                 <div className="space-y-2">
                   {buyer.knownSuppliers
-                    .filter((s) => s !== "Greenfield Infrastructure Ltd")
+                    .filter((s) => !companyName || s !== companyName)
                     .map((competitor) => (
                       <div key={competitor} className="flex items-center justify-between text-xs">
                         <span className="text-gray-700 font-medium">{competitor}</span>
@@ -607,9 +579,15 @@ function BuyerDetailPanel({ buyer }: { buyer: Buyer }) {
 export default function BuyerIntelligence() {
   const [search, setSearch] = useState("")
   const [activeFilter, setActiveFilter] = useState<string>("all")
-  const [selectedBuyer, setSelectedBuyer] = useState<Buyer>(DEMO_BUYERS[0])
+  const [selectedBuyer, setSelectedBuyer] = useState<Buyer | null>(null)
 
-  const filteredBuyers = DEMO_BUYERS.filter((buyer) => {
+  const { data: buyersData, isLoading: buyersLoading } = useBuyers()
+  const { data: companyData } = useCompany()
+  const companyName = companyData?.name ?? ""
+
+  const buyers = buyersData ?? []
+
+  const filteredBuyers = buyers.filter((buyer) => {
     const matchesSearch =
       search === "" ||
       buyer.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -639,9 +617,6 @@ export default function BuyerIntelligence() {
                   </p>
                 </div>
               </div>
-              <Badge className="border-blue-400/40 bg-blue-400/20 text-blue-100 hover:bg-blue-400/20 mt-3 sm:mt-0 w-fit">
-                DEMO MODE
-              </Badge>
             </div>
           </div>
         </div>
@@ -675,7 +650,11 @@ export default function BuyerIntelligence() {
           </div>
 
           <p className="text-xs text-gray-400">
-            Showing {filteredBuyers.length} key buyer{filteredBuyers.length !== 1 ? "s" : ""} (DEMO)
+            {buyersLoading
+              ? "Loading buyers…"
+              : buyers.length === 0
+              ? "No buyers yet"
+              : `Showing ${filteredBuyers.length} buyer${filteredBuyers.length !== 1 ? "s" : ""}`}
           </p>
         </div>
 
@@ -684,7 +663,16 @@ export default function BuyerIntelligence() {
 
           {/* Buyer cards — left 2 cols */}
           <div className="lg:col-span-2 space-y-4">
-            {filteredBuyers.length === 0 ? (
+            {buyersLoading ? (
+              <div className="rounded-xl border border-dashed border-gray-200 bg-white p-8 text-center">
+                <p className="text-sm text-gray-400">Loading buyers…</p>
+              </div>
+            ) : buyers.length === 0 ? (
+              <div className="rounded-xl border border-dashed border-gray-200 bg-white p-8 text-center">
+                <Building2 className="h-8 w-8 text-gray-300 mx-auto mb-2" />
+                <p className="text-sm text-gray-500">No buyer intelligence yet — buyers will appear here as you track opportunities</p>
+              </div>
+            ) : filteredBuyers.length === 0 ? (
               <div className="rounded-xl border border-dashed border-gray-200 bg-white p-8 text-center">
                 <Building2 className="h-8 w-8 text-gray-300 mx-auto mb-2" />
                 <p className="text-sm text-gray-500">No buyers match your search.</p>
@@ -696,23 +684,16 @@ export default function BuyerIntelligence() {
                   buyer={buyer}
                   selected={selectedBuyer?.id === buyer.id}
                   onClick={() => setSelectedBuyer(buyer)}
+                  companyName={companyName}
                 />
               ))
             )}
-
-            <div className="rounded-xl border border-dashed border-gray-200 bg-white p-5 text-center">
-              <Building2 className="h-6 w-6 text-gray-300 mx-auto mb-2" />
-              <p className="text-xs text-gray-500 font-medium">More buyers coming in the full version</p>
-              <p className="text-xs text-gray-400 mt-1">
-                BidIQ Pro indexes thousands of public sector buyers across England, Scotland and Wales.
-              </p>
-            </div>
           </div>
 
           {/* Buyer detail — right 3 cols */}
           <div className="lg:col-span-3">
             {selectedBuyer ? (
-              <BuyerDetailPanel buyer={selectedBuyer} />
+              <BuyerDetailPanel buyer={selectedBuyer} companyName={companyName} />
             ) : (
               <div className="rounded-xl border border-dashed border-gray-200 bg-white p-12 text-center">
                 <Building2 className="h-10 w-10 text-gray-200 mx-auto mb-3" />
@@ -724,7 +705,7 @@ export default function BuyerIntelligence() {
 
         {/* Footer note */}
         <p className="mt-10 text-center text-xs text-gray-400">
-          All buyer data is demo data for Greenfield Infrastructure Ltd. Live version indexes Find a Tender, Contracts Finder and buyer portals.
+          BidIQ indexes Find a Tender, Contracts Finder and buyer portals to keep your intelligence up to date.
         </p>
       </div>
     </div>

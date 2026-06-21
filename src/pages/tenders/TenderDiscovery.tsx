@@ -25,10 +25,10 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet"
-import { DEMO_TENDERS } from "@/lib/demo-data"
 import { formatCurrency, formatDate, daysUntil, cn } from "@/lib/utils"
 import { CONTRACT_CATEGORIES, UK_REGIONS, ROUTES } from "@/lib/constants"
 import type { Tender } from "@/types"
+import { useTenders } from "@/hooks/useApi"
 
 // ─── Types & constants ────────────────────────────────────────────────────────
 
@@ -212,11 +212,6 @@ function TenderCard({
               className="border-govgreen-400 bg-govgreen-50 text-govgreen-700 text-[11px]"
             >
               SME Friendly
-            </Badge>
-          )}
-          {tender.isDemo && (
-            <Badge variant="secondary" className="text-[11px] opacity-70">
-              DEMO
             </Badge>
           )}
           {tender.type === "framework" && (
@@ -670,21 +665,29 @@ function ActiveFilterChips({
 
 // ─── Empty State ──────────────────────────────────────────────────────────────
 
-function EmptyState({ onClear }: { onClear: () => void }) {
+function EmptyState({ hasFilters, onClear }: { hasFilters: boolean; onClear: () => void }) {
   return (
     <div className="flex flex-col items-center justify-center py-20 text-center">
       <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gray-100">
         <Search className="h-8 w-8 text-gray-400" />
       </div>
       <h3 className="mb-1 text-base font-semibold text-gray-900">
-        No tenders match your filters
+        No opportunities found
       </h3>
-      <p className="mb-4 max-w-xs text-sm text-gray-500">
-        Try adjusting your search terms or removing some filters to see more opportunities.
-      </p>
-      <Button variant="outline" size="sm" onClick={onClear}>
-        Clear filters
-      </Button>
+      {hasFilters ? (
+        <>
+          <p className="mb-4 max-w-xs text-sm text-gray-500">
+            Try adjusting your search terms or removing some filters to see more opportunities.
+          </p>
+          <Button variant="outline" size="sm" onClick={onClear}>
+            Clear filters
+          </Button>
+        </>
+      ) : (
+        <p className="mb-4 max-w-xs text-sm text-gray-500">
+          No tenders have been loaded yet. Check back soon.
+        </p>
+      )}
     </div>
   )
 }
@@ -698,6 +701,9 @@ export default function TenderDiscovery() {
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false)
   const [savedIds, setSavedIds] = useState<Set<string>>(new Set())
   const [rejectedIds, setRejectedIds] = useState<Set<string>>(new Set())
+
+  const { data: tendersData } = useTenders()
+  const allTenders: Tender[] = tendersData?.tenders ?? []
 
   function patchFilters(patch: Partial<FilterState>) {
     setFilters((prev) => ({ ...prev, ...patch }))
@@ -722,7 +728,7 @@ export default function TenderDiscovery() {
 
   // Core filtered set (tab logic applied separately below)
   const baseFiltered = useMemo(() => {
-    return DEMO_TENDERS.filter((t) => {
+    return allTenders.filter((t) => {
       if (rejectedIds.has(t.id)) return false
 
       if (searchQuery) {
@@ -765,7 +771,7 @@ export default function TenderDiscovery() {
 
       return true
     })
-  }, [searchQuery, filters, rejectedIds])
+  }, [allTenders, searchQuery, filters, rejectedIds])
 
   const tabSets = useMemo(
     () => ({
@@ -814,16 +820,16 @@ export default function TenderDiscovery() {
             <div>
               <div className="mb-1 flex items-center gap-2">
                 <h1 className="text-2xl font-bold text-gray-900">Find Tenders</h1>
-                <Badge className="bg-amber-100 text-amber-700 hover:bg-amber-100">DEMO</Badge>
               </div>
               <p className="text-sm text-gray-500">
                 Discover matched government, local authority, NHS, highways and framework
                 opportunities
               </p>
-              <p className="mt-1 text-xs font-medium text-navy-700">
-                {tabSets.all.length} opportunities matched for{" "}
-                <span className="font-semibold">Greenfield Infrastructure Ltd</span>
-              </p>
+              {tabSets.all.length > 0 && (
+                <p className="mt-1 text-xs font-medium text-navy-700">
+                  {tabSets.all.length} opportunities matched
+                </p>
+              )}
             </div>
           </div>
 
@@ -1063,7 +1069,7 @@ export default function TenderDiscovery() {
                     className="mt-0 focus-visible:outline-none"
                   >
                     {currentTenders.length === 0 ? (
-                      <EmptyState onClear={clearFilters} />
+                      <EmptyState hasFilters={hasActiveFilters} onClear={clearFilters} />
                     ) : (
                       <div className="flex flex-col gap-4">
                         {currentTenders.map((tender) => (

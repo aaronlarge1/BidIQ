@@ -12,7 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog"
-import { DEMO_EVIDENCE } from "@/lib/demo-data"
+import { useEvidence } from "@/hooks/useApi"
 import { formatDate } from "@/lib/utils"
 import type { Evidence } from "@/types"
 
@@ -285,7 +285,6 @@ function EvidenceDialog({
         <div className="space-y-4 pt-1">
           <div className="flex items-center gap-2 flex-wrap">
             {evidenceTypeBadge(evidence.type)}
-            <Badge variant="outline" className="text-xs">DEMO</Badge>
           </div>
           {evidence.contractId && (
             <div>
@@ -339,7 +338,9 @@ export default function EvidenceVault() {
   const [search, setSearch] = useState("")
   const [viewingEvidence, setViewingEvidence] = useState<Evidence | null>(null)
 
-  const filtered = DEMO_EVIDENCE.filter(e => {
+  const { data: evidence = [] } = useEvidence()
+
+  const filtered = evidence.filter(e => {
     const typeMatch = TAB_FILTERS[activeTab] === "all" || e.type === TAB_FILTERS[activeTab]
     const searchMatch =
       !search ||
@@ -360,12 +361,9 @@ export default function EvidenceVault() {
               <div>
                 <div className="flex items-center gap-2 mb-1">
                   <h1 className="text-xl font-bold sm:text-2xl">Evidence Vault</h1>
-                  <Badge className="border-blue-400/40 bg-blue-400/20 text-blue-100 hover:bg-blue-400/20">
-                    DEMO
-                  </Badge>
                 </div>
                 <p className="text-sm text-blue-200">
-                  {DEMO_EVIDENCE.length} items &middot; Used in 0 bids &middot; 0 KB stored
+                  {evidence.length} items &middot; Used in 0 bids &middot; 0 KB stored
                 </p>
               </div>
               <div className="flex flex-wrap items-center gap-2">
@@ -433,7 +431,7 @@ export default function EvidenceVault() {
                   <p className="text-xs text-gray-400 mt-1">
                     {search
                       ? `No results for "${search}"`
-                      : "No items in this category yet — add evidence from your contracts"}
+                      : "No evidence yet — add past project references, testimonials and case studies"}
                   </p>
                 </div>
               ) : (
@@ -496,11 +494,6 @@ export default function EvidenceVault() {
           <CaseStudyBuilder />
         </div>
 
-        {/* ─── Demo footer ──────────────────────────────────────────────── */}
-        <p className="mt-8 text-center text-xs text-gray-400">
-          All data shown is demo data for Greenfield Infrastructure Ltd ·{" "}
-          Evidence Vault is available on the Pro plan
-        </p>
 
       </div>
 

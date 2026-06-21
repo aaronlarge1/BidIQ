@@ -24,9 +24,10 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { useBids } from "@/hooks/useApi"
 
 // ---------------------------------------------------------------------------
-// Types (local fallback — replace with @/types import if available)
+// Types
 // ---------------------------------------------------------------------------
 
 type BidStage =
@@ -44,98 +45,11 @@ interface Bid {
   title: string
   buyer: string
   value: number
-  deadline: string // ISO date
-  probability: number // 0–100
+  deadline: string
+  probability: number
   assignedInitials: string
   stage: BidStage
 }
-
-// ---------------------------------------------------------------------------
-// Demo data (inline fallback — replace with DEMO_BIDS import if available)
-// ---------------------------------------------------------------------------
-
-const DEMO_BIDS: Bid[] = [
-  {
-    id: "b-001",
-    title: "A57 Road Resurfacing — National Highways",
-    buyer: "National Highways",
-    value: 1200000,
-    deadline: "2026-07-04",
-    probability: 65,
-    assignedInitials: "JR",
-    stage: "Bid in Progress",
-  },
-  {
-    id: "b-002",
-    title: "Winter Maintenance Stockport 2026/27",
-    buyer: "Stockport Council",
-    value: 480000,
-    deadline: "2026-07-18",
-    probability: 55,
-    assignedInitials: "SW",
-    stage: "Qualified",
-  },
-  {
-    id: "b-003",
-    title: "Street Lighting Maintenance Leeds",
-    buyer: "Leeds City Council",
-    value: 290000,
-    deadline: "2026-08-01",
-    probability: 45,
-    assignedInitials: "AM",
-    stage: "Identified",
-  },
-  {
-    id: "b-004",
-    title: "M62 Junction 12 Improvement Works",
-    buyer: "National Highways",
-    value: 950000,
-    deadline: "2026-06-28",
-    probability: 50,
-    assignedInitials: "JR",
-    stage: "Submitted",
-  },
-  {
-    id: "b-005",
-    title: "Trafford Highway Repairs Framework",
-    buyer: "Trafford Council",
-    value: 640000,
-    deadline: "2026-05-30",
-    probability: 100,
-    assignedInitials: "SW",
-    stage: "Awarded",
-  },
-  {
-    id: "b-006",
-    title: "Manchester Pothole Repair Rapid Response",
-    buyer: "Manchester City Council",
-    value: 185000,
-    deadline: "2026-07-10",
-    probability: 30,
-    assignedInitials: "AM",
-    stage: "Lost",
-  },
-  {
-    id: "b-007",
-    title: "Salford Bridge Inspection Services",
-    buyer: "Salford City Council",
-    value: 220000,
-    deadline: "2026-09-15",
-    probability: 40,
-    assignedInitials: "JR",
-    stage: "Clarification",
-  },
-  {
-    id: "b-008",
-    title: "A56 Corridor Maintenance — Renewal",
-    buyer: "Transport for Greater Manchester",
-    value: 310000,
-    deadline: "2026-08-20",
-    probability: 72,
-    assignedInitials: "SW",
-    stage: "Renewal Due",
-  },
-]
 
 // ---------------------------------------------------------------------------
 // Utility helpers (inline fallbacks)
@@ -515,7 +429,29 @@ export default function BidPipeline() {
   const [sortField, setSortField] = useState<SortField>("deadline")
   const [sortDir, setSortDir] = useState<SortDir>("asc")
 
-  const bids = DEMO_BIDS
+  const { data: apiBids } = useBids()
+
+  // Map API bid shape (kebab-case stages, tenderTitle) to local display shape
+  const STAGE_MAP: Record<string, BidStage> = {
+    "identified": "Identified",
+    "qualified": "Qualified",
+    "bid-in-progress": "Bid in Progress",
+    "submitted": "Submitted",
+    "clarification": "Clarification",
+    "awarded": "Awarded",
+    "lost": "Lost",
+    "renewal-due": "Renewal Due",
+  }
+  const bids: Bid[] = (apiBids ?? []).map((b) => ({
+    id: b.id,
+    title: b.tenderTitle,
+    buyer: b.buyer,
+    value: b.value,
+    deadline: b.deadline,
+    probability: b.probability,
+    assignedInitials: b.assignedTo?.slice(0, 2).toUpperCase() ?? "??",
+    stage: STAGE_MAP[b.stage] ?? "Identified",
+  }))
 
   const totalPipelineValue = bids.reduce((s, b) => s + b.value, 0)
   const activeBids = bids.filter(
@@ -621,9 +557,24 @@ export default function BidPipeline() {
         </div>
 
         {/* ---------------------------------------------------------------- */}
+        {/* EMPTY STATE                                                       */}
+        {/* ---------------------------------------------------------------- */}
+        {bids.length === 0 && (
+          <div className="flex flex-col items-center justify-center py-24 text-center">
+            <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-slate-800">
+              <Kanban className="h-8 w-8 text-slate-500" />
+            </div>
+            <p className="text-base font-semibold text-slate-200">No bids yet</p>
+            <p className="mt-1 max-w-xs text-sm text-slate-500">
+              Start by discovering opportunities in the Tender Discovery page
+            </p>
+          </div>
+        )}
+
+        {/* ---------------------------------------------------------------- */}
         {/* KANBAN VIEW                                                       */}
         {/* ---------------------------------------------------------------- */}
-        {viewMode === "kanban" && (
+        {bids.length > 0 && viewMode === "kanban" && (
           <div className="overflow-x-auto pb-4">
             <div className="flex gap-4" style={{ minWidth: "1400px" }}>
               {STAGE_ORDER.map((stage) => {
@@ -683,7 +634,7 @@ export default function BidPipeline() {
         {/* ---------------------------------------------------------------- */}
         {/* LIST VIEW                                                         */}
         {/* ---------------------------------------------------------------- */}
-        {viewMode === "list" && (
+        {bids.length > 0 && viewMode === "list" && (
           <div className="overflow-hidden rounded-xl border border-slate-700 bg-slate-900/60">
             <div className="overflow-x-auto">
               <table className="w-full text-left">
@@ -727,7 +678,7 @@ export default function BidPipeline() {
         {/* ---------------------------------------------------------------- */}
         {/* PIPELINE HEALTH                                                   */}
         {/* ---------------------------------------------------------------- */}
-        <PipelineHealth bids={bids} />
+        {bids.length > 0 && <PipelineHealth bids={bids} />}
       </div>
     </div>
   )

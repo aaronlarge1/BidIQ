@@ -56,32 +56,6 @@ function Toggle({
   )
 }
 
-// ─── Demo users ───────────────────────────────────────────────────────────────
-
-const DEMO_USERS = [
-  {
-    id: "u-001",
-    name: "Aaron Large",
-    email: "debutwebconsultants@gmail.com",
-    role: "Admin",
-    status: "Active",
-  },
-  {
-    id: "u-002",
-    name: "Sarah Mitchell",
-    email: "sarah@greenfield.co.uk",
-    role: "Bid Manager",
-    status: "Active",
-  },
-  {
-    id: "u-003",
-    name: "James Reid",
-    email: "james@greenfield.co.uk",
-    role: "Viewer",
-    status: "Active",
-  },
-]
-
 const ROLE_DESCRIPTIONS: Record<string, string> = {
   Admin: "Full access to all features, billing and user management.",
   "Bid Manager": "Can create and manage bids, tenders and compliance documents.",
@@ -400,7 +374,7 @@ export default function Settings() {
                           Name
                         </th>
                         <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
-                          Email
+                          Company
                         </th>
                         <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
                           Role
@@ -414,55 +388,39 @@ export default function Settings() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100">
-                      {DEMO_USERS.map((user) => (
-                        <tr key={user.id} className="hover:bg-gray-50">
+                      {companyData ? (
+                        <tr className="hover:bg-gray-50">
                           <td className="px-4 py-3">
                             <div className="flex items-center gap-3">
                               <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#1e3055] text-xs font-bold text-white">
-                                {user.name.split(" ").map((n) => n[0]).join("")}
+                                {companyData.name ? companyData.name.split(" ").map((n: string) => n[0]).join("").slice(0, 2) : "?"}
                               </div>
-                              <span className="font-medium text-gray-900">{user.name}</span>
+                              <span className="font-medium text-gray-900">{companyData.name ?? "Account owner"}</span>
                             </div>
                           </td>
-                          <td className="px-4 py-3 text-gray-600 text-xs">{user.email}</td>
+                          <td className="px-4 py-3 text-gray-600 text-xs">{companyData.name ?? "—"}</td>
                           <td className="px-4 py-3">
-                            <Badge
-                              className={
-                                user.role === "Admin"
-                                  ? "bg-[#1e3055] text-white text-xs"
-                                  : user.role === "Bid Manager"
-                                  ? "bg-blue-100 text-blue-700 border-blue-200 text-xs"
-                                  : "bg-gray-100 text-gray-700 border-gray-200 text-xs"
-                              }
-                            >
-                              {user.role}
-                            </Badge>
+                            <Badge className="bg-[#1e3055] text-white text-xs">Admin</Badge>
                           </td>
                           <td className="px-4 py-3">
                             <span className="inline-flex items-center gap-1.5 text-xs font-medium text-green-600">
                               <span className="h-1.5 w-1.5 rounded-full bg-green-500" />
-                              {user.status}
+                              Active
                             </span>
                           </td>
                           <td className="px-4 py-3 text-right">
-                            <div className="flex items-center justify-end gap-2">
-                              <Button variant="outline" size="sm" className="h-7 px-2 text-xs" disabled>
-                                Edit
-                              </Button>
-                              {user.role !== "Admin" && (
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  className="h-7 px-2 text-xs text-red-600 border-red-200 hover:bg-red-50"
-                                  disabled
-                                >
-                                  <Trash2 className="h-3 w-3" />
-                                </Button>
-                              )}
-                            </div>
+                            <Button variant="outline" size="sm" className="h-7 px-2 text-xs" disabled>
+                              Edit
+                            </Button>
                           </td>
                         </tr>
-                      ))}
+                      ) : (
+                        <tr>
+                          <td colSpan={5} className="px-4 py-6 text-center text-xs text-gray-400">
+                            {companyLoading ? "Loading…" : "No account data found."}
+                          </td>
+                        </tr>
+                      )}
                     </tbody>
                   </table>
                 </div>
@@ -496,7 +454,7 @@ export default function Settings() {
                 </div>
 
                 <p className="mt-4 text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-                  Demo mode — user management is disabled. Invite User will open when connected to a live account.
+                  Team management coming soon — multi-user access and role management will be available in an upcoming release.
                 </p>
               </CardContent>
             </Card>

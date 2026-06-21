@@ -10,7 +10,7 @@ import { Progress } from "@/components/ui/progress"
 import { Separator } from "@/components/ui/separator"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { DEMO_DOCUMENTS } from "@/lib/demo-data"
+import { useDocuments } from "@/hooks/useApi"
 import { formatDate, cn } from "@/lib/utils"
 import type { Document, DocumentCategory } from "@/types"
 
@@ -51,19 +51,21 @@ export default function ComplianceVault() {
   const [selectedCategory, setSelectedCategory] = useState<string>("")
   const [docName, setDocName] = useState("")
 
+  const { data: documents = [] } = useDocuments()
+
   const filteredDocs =
     activeTab === "all"
-      ? DEMO_DOCUMENTS
-      : DEMO_DOCUMENTS.filter((d) => d.category === activeTab)
+      ? documents
+      : documents.filter((d) => d.category === activeTab)
 
-  const validCount = DEMO_DOCUMENTS.filter((d) => d.status === "valid").length
-  const expiredCount = DEMO_DOCUMENTS.filter((d) => d.status === "expired").length
-  const expiringSoonCount = DEMO_DOCUMENTS.filter((d) => d.status === "expiring-soon").length
-  const missingCount = DEMO_DOCUMENTS.filter((d) => d.status === "missing").length
-  const totalCount = DEMO_DOCUMENTS.length
-  const compliancePercent = Math.round((validCount / totalCount) * 100)
+  const validCount = documents.filter((d) => d.status === "valid").length
+  const expiredCount = documents.filter((d) => d.status === "expired").length
+  const expiringSoonCount = documents.filter((d) => d.status === "expiring-soon").length
+  const missingCount = documents.filter((d) => d.status === "missing").length
+  const totalCount = documents.length
+  const compliancePercent = totalCount > 0 ? Math.round((validCount / totalCount) * 100) : 0
 
-  const docsWithExpiry = DEMO_DOCUMENTS.filter((d) => d.expiryDate).sort(
+  const docsWithExpiry = documents.filter((d) => d.expiryDate).sort(
     (a, b) => new Date(a.expiryDate!).getTime() - new Date(b.expiryDate!).getTime()
   )
 
@@ -98,9 +100,6 @@ export default function ComplianceVault() {
           <div className="flex items-center gap-2">
             <FileText className="h-6 w-6 text-slate-700" />
             <h1 className="text-2xl font-bold text-slate-900">Compliance Vault</h1>
-            <Badge variant="secondary" className="ml-2 text-xs font-semibold tracking-wide">
-              DEMO
-            </Badge>
           </div>
           <p className="text-sm text-slate-500">
             Manage and monitor your compliance documents, certifications, and policies.
@@ -219,7 +218,9 @@ export default function ComplianceVault() {
                     {filteredDocs.length === 0 ? (
                       <TableRow>
                         <TableCell colSpan={6} className="py-10 text-center text-sm text-slate-400">
-                          No documents in this category.
+                          {documents.length === 0
+                            ? "No compliance documents yet — upload your certificates, policies and accreditations"
+                            : "No documents in this category."}
                         </TableCell>
                       </TableRow>
                     ) : (
@@ -345,7 +346,7 @@ export default function ComplianceVault() {
                     <Upload className="mr-1.5 h-4 w-4" />
                     Upload Document
                   </Button>
-                  <p className="text-xs text-slate-400">Demo mode — uploads are simulated</p>
+                  <p className="text-xs text-slate-400">PDF, DOCX, XLSX, JPG, PNG — max 10MB</p>
                 </div>
               </CardContent>
             </Card>
