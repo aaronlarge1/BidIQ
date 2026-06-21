@@ -263,7 +263,7 @@ function TenderCard({
           onClick={(e) => e.stopPropagation()}
         >
           <div className="flex flex-wrap items-center gap-2">
-            <ScoreBadge score={tender.opportunityScore} />
+            {tender.opportunityScore != null && <ScoreBadge score={tender.opportunityScore} />}
             <RecommendationBadge rec={tender.recommendation} />
           </div>
           <div className="flex items-center gap-2">

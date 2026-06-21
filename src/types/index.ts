@@ -78,8 +78,8 @@ export interface Tender {
   type: TenderType
   status: TenderStatus
   recommendation: TenderRecommendation
-  opportunityScore: number
-  eligibilityScore: number
+  opportunityScore: number | null
+  eligibilityScore: number | null
   smeFlag: boolean
   description: string
   cpvCode?: string
@@ -90,18 +90,18 @@ export interface Tender {
 }
 
 export interface OpportunityDetail extends Tender {
-  winProbability: number
+  winProbability: number | null
   requiredDocuments: string[]
   missingDocuments: string[]
-  insuranceRequired: InsuranceType[]
-  accreditationsRequired: AccreditationType[]
-  socialValueRequirements: string
-  deliveryRisk: "low" | "medium" | "high"
-  financialRisk: "low" | "medium" | "high"
-  bidEffort: "low" | "medium" | "high"
-  buyerNotes: string
-  recommendedAction: string
-  estimatedBidCost: number
+  insuranceRequired: string[]
+  accreditationsRequired: string[]
+  socialValueRequirements: string | null
+  deliveryRisk: string | null
+  financialRisk: string | null
+  bidEffort: string | null
+  buyerNotes: string | null
+  recommendedAction: string | null
+  estimatedBidCost: number | null
 }
 
 // ─── Bids & Pipeline ─────────────────────────────────────────────────────────

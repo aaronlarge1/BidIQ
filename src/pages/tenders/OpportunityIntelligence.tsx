@@ -17,7 +17,7 @@ import {
   Bot,
   BookmarkPlus,
   ThumbsDown,
-  ExternalLink,
+  Loader2,
 } from "lucide-react"
 import { RadialBarChart, RadialBar, ResponsiveContainer, Cell } from "recharts"
 import { Button } from "@/components/ui/button"
@@ -26,67 +26,9 @@ import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { Separator } from "@/components/ui/separator"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { DEMO_TENDERS } from "@/lib/demo-data"
+import { useTender, useCompany } from "@/hooks/useApi"
 import { formatCurrency, formatDate, daysUntil } from "@/lib/utils"
 import { ROUTES } from "@/lib/constants"
-import type { Tender } from "@/types"
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Static intelligence data overlaid on top of the Tender record
-// ─────────────────────────────────────────────────────────────────────────────
-
-interface DocumentItem {
-  label: string
-  have: boolean
-  note?: string
-}
-
-const REQUIRED_DOCUMENTS: DocumentItem[] = [
-  { label: "PQQ / Selection Questionnaire", have: true },
-  { label: "Public Liability Insurance £10m+", have: true },
-  { label: "Employers Liability Insurance", have: true },
-  { label: "ISO 9001", have: true },
-  { label: "ISO 14001", have: true },
-  { label: "Cyber Essentials", have: false, note: "MISSING — obtain before submission" },
-  { label: "GDPR Policy 2024+", have: false, note: "EXPIRED — renew immediately" },
-  { label: "Social Value Statement", have: true },
-  { label: "Method Statement (highways)", have: true },
-  { label: "Health & Safety Policy", have: true },
-  { label: "Previous Contract References ×2", have: true },
-  { label: "Financial Accounts (last 2 years)", have: true },
-]
-
-interface SimilarOpportunity {
-  id: string
-  title: string
-  buyer: string
-  value: string
-  score: number
-}
-
-const SIMILAR_OPPORTUNITIES: SimilarOpportunity[] = [
-  {
-    id: "t-002",
-    title: "Network Rail Track Renewal — East Midlands",
-    buyer: "Network Rail",
-    value: "£1.2m–£3.8m",
-    score: 79,
-  },
-  {
-    id: "t-003",
-    title: "Highways Maintenance Framework — North West",
-    buyer: "Transport for the North",
-    value: "£800k–£2.4m",
-    score: 74,
-  },
-  {
-    id: "t-004",
-    title: "Local Highway Works — Greater Manchester",
-    buyer: "Transport for Greater Manchester",
-    value: "£250k–£600k",
-    score: 68,
-  },
-]
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Sub-components
@@ -97,13 +39,14 @@ function ScoreDial({
   label,
   color,
 }: {
-  value: number
+  value: number | null | undefined
   label: string
   color: string
 }) {
+  const pct = value ?? 0
   const data = [
-    { value, fill: color },
-    { value: 100 - value, fill: "#1e293b" },
+    { value: pct, fill: color },
+    { value: 100 - pct, fill: "#1e293b" },
   ]
 
   return (
@@ -128,7 +71,9 @@ function ScoreDial({
           </RadialBarChart>
         </ResponsiveContainer>
         <div className="absolute inset-0 flex items-center justify-center">
-          <span className="text-xl font-bold text-white">{value}%</span>
+          <span className="text-xl font-bold text-white">
+            {value != null ? `${value}%` : "—"}
+          </span>
         </div>
       </div>
       <span className="text-xs text-slate-400 text-center leading-tight">{label}</span>
@@ -136,31 +81,23 @@ function ScoreDial({
   )
 }
 
-function DocumentRow({ doc }: { doc: DocumentItem }) {
+function DocumentRow({ label, have, note }: { label: string; have: boolean; note?: string }) {
   return (
     <div
       className={`flex items-start gap-3 p-3 rounded-lg ${
-        doc.have
-          ? "bg-slate-800/50"
-          : "bg-red-950/40 border border-red-800/40"
+        have ? "bg-slate-800/50" : "bg-red-950/40 border border-red-800/40"
       }`}
     >
-      {doc.have ? (
+      {have ? (
         <CheckCircle2 className="w-5 h-5 text-emerald-400 mt-0.5 shrink-0" />
       ) : (
         <XCircle className="w-5 h-5 text-red-400 mt-0.5 shrink-0" />
       )}
       <div className="flex-1 min-w-0">
-        <span
-          className={`text-sm font-medium ${
-            doc.have ? "text-slate-200" : "text-red-200"
-          }`}
-        >
-          {doc.label}
+        <span className={`text-sm font-medium ${have ? "text-slate-200" : "text-red-200"}`}>
+          {label}
         </span>
-        {doc.note && (
-          <p className="text-xs text-red-400 mt-0.5">{doc.note}</p>
-        )}
+        {note && <p className="text-xs text-red-400 mt-0.5">{note}</p>}
       </div>
     </div>
   )
@@ -172,23 +109,14 @@ function RiskRow({
   detail,
 }: {
   label: string
-  level: "low" | "medium" | "high"
+  level: "low" | "medium" | "high" | "unknown"
   detail: string
 }) {
   const colors = {
-    low: {
-      dot: "bg-emerald-400",
-      badge:
-        "bg-emerald-900/60 text-emerald-300 border-emerald-700",
-    },
-    medium: {
-      dot: "bg-amber-400",
-      badge: "bg-amber-900/60 text-amber-300 border-amber-700",
-    },
-    high: {
-      dot: "bg-red-400",
-      badge: "bg-red-900/60 text-red-300 border-red-700",
-    },
+    low: { dot: "bg-emerald-400", badge: "bg-emerald-900/60 text-emerald-300 border-emerald-700" },
+    medium: { dot: "bg-amber-400", badge: "bg-amber-900/60 text-amber-300 border-amber-700" },
+    high: { dot: "bg-red-400", badge: "bg-red-900/60 text-red-300 border-red-700" },
+    unknown: { dot: "bg-slate-500", badge: "bg-slate-800/60 text-slate-400 border-slate-600" },
   }
   const c = colors[level]
 
@@ -197,13 +125,9 @@ function RiskRow({
       <div className={`w-3 h-3 rounded-full mt-1 shrink-0 ${c.dot}`} />
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 mb-1">
-          <span className="text-sm font-semibold text-slate-200">
-            {label}
-          </span>
-          <span
-            className={`text-xs px-2 py-0.5 rounded border font-medium capitalize ${c.badge}`}
-          >
-            {level}
+          <span className="text-sm font-semibold text-slate-200">{label}</span>
+          <span className={`text-xs px-2 py-0.5 rounded border font-medium capitalize ${c.badge}`}>
+            {level === "unknown" ? "not assessed" : level}
           </span>
         </div>
         <p className="text-sm text-slate-400">{detail}</p>
@@ -212,24 +136,13 @@ function RiskRow({
   )
 }
 
-function SimilarCard({ opp }: { opp: SimilarOpportunity }) {
-  return (
-    <Link
-      to={ROUTES.tender(opp.id)}
-      className="block p-3 rounded-lg bg-slate-800/60 border border-slate-700/50 hover:border-indigo-500/40 hover:bg-slate-800 transition-all group"
-    >
-      <p className="text-sm font-medium text-slate-200 group-hover:text-white leading-snug mb-1">
-        {opp.title}
-      </p>
-      <p className="text-xs text-slate-500 mb-2">{opp.buyer}</p>
-      <div className="flex items-center justify-between">
-        <span className="text-xs text-slate-400">{opp.value}</span>
-        <span className="text-xs font-semibold text-indigo-400">
-          {opp.score}% match
-        </span>
-      </div>
-    </Link>
-  )
+function parseRiskLevel(raw: string | null | undefined): "low" | "medium" | "high" | "unknown" {
+  if (!raw) return "unknown"
+  const lower = raw.toLowerCase()
+  if (lower.includes("low")) return "low"
+  if (lower.includes("high")) return "high"
+  if (lower.includes("medium") || lower.includes("moderate")) return "medium"
+  return "unknown"
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -240,30 +153,39 @@ export default function OpportunityIntelligence() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
 
-  const tender: Tender | undefined =
-    DEMO_TENDERS.find((t) => t.id === id) ??
-    DEMO_TENDERS.find((t) => t.id === "t-001")
+  const { data: tender, isLoading, isError } = useTender(id ?? "")
+  const { data: company } = useCompany()
 
-  const days = tender ? daysUntil(tender.deadline) : 0
-  const isUrgent = days <= 14
-  const missingDocs = REQUIRED_DOCUMENTS.filter((d) => !d.have)
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <Loader2 className="w-8 h-8 text-indigo-400 animate-spin" />
+      </div>
+    )
+  }
 
-  if (!tender) {
+  if (isError || !tender) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
         <AlertTriangle className="w-12 h-12 text-amber-400" />
-        <h2 className="text-xl font-semibold text-slate-200">
-          Tender not found
-        </h2>
-        <Button
-          variant="outline"
-          onClick={() => navigate(ROUTES.tenders)}
-        >
+        <h2 className="text-xl font-semibold text-slate-200">Tender not found</h2>
+        <Button variant="outline" onClick={() => navigate(ROUTES.tenders)}>
           Back to Tender Discovery
         </Button>
       </div>
     )
   }
+
+  const days = daysUntil(tender.deadline)
+  const isUrgent = days <= 14
+
+  // Build document lists from API data
+  const requiredDocs = (tender.requiredDocuments ?? []).map((label) => ({ label, have: true, note: undefined as string | undefined }))
+  const missingDocs = (tender.missingDocuments ?? []).map((label) => ({ label, have: false, note: "MISSING — obtain before submission" }))
+  const allDocs = [...requiredDocs, ...missingDocs]
+  const hasDocData = allDocs.length > 0
+
+  const companyName = company?.name ?? "Your company"
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100">
@@ -283,9 +205,6 @@ export default function OpportunityIntelligence() {
                 {tender.reference}
               </span>
             )}
-            <Badge className="bg-amber-900/60 text-amber-300 border-amber-700 border text-xs">
-              DEMO DATA
-            </Badge>
             {tender.status === "closing-soon" ? (
               <Badge className="bg-red-900/60 text-red-300 border-red-700 border text-xs">
                 Closing Soon
@@ -316,13 +235,10 @@ export default function OpportunityIntelligence() {
                   {tender.title}
                 </h1>
 
-                {/* Buyer meta */}
                 <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-slate-400">
                   <div className="flex items-center gap-1.5">
                     <Building2 className="w-4 h-4 text-slate-500" />
-                    <span className="text-slate-300 font-medium">
-                      {tender.buyer}
-                    </span>
+                    <span className="text-slate-300 font-medium">{tender.buyer}</span>
                     {tender.buyerType && (
                       <span className="text-slate-500">
                         · {tender.buyerType.replace(/-/g, " ")}
@@ -335,7 +251,6 @@ export default function OpportunityIntelligence() {
                   </div>
                 </div>
 
-                {/* Dates */}
                 <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm">
                   <div className="flex items-center gap-1.5 text-slate-400">
                     <Calendar className="w-4 h-4 text-slate-500" />
@@ -351,28 +266,22 @@ export default function OpportunityIntelligence() {
                     }`}
                   >
                     {isUrgent && <AlertTriangle className="w-4 h-4" />}
-                    {days > 0
-                      ? `${days} days remaining`
-                      : `${Math.abs(days)} days overdue`}
+                    {days > 0 ? `${days} days remaining` : `${Math.abs(days)} days overdue`}
                   </div>
                 </div>
 
                 <Separator className="bg-slate-700/60" />
 
-                {/* Value */}
                 <div className="flex items-center gap-3">
                   <PoundSterling className="w-5 h-5 text-emerald-400" />
                   <span className="text-2xl font-bold text-emerald-400">
                     {formatCurrency(tender.value)}
                     {tender.valueMax && (
-                      <span className="text-slate-400">
-                        {" "}– {formatCurrency(tender.valueMax)}
-                      </span>
+                      <span className="text-slate-400"> – {formatCurrency(tender.valueMax)}</span>
                     )}
                   </span>
                 </div>
 
-                {/* Badges */}
                 <div className="flex flex-wrap gap-2">
                   {tender.cpvCode && (
                     <Badge className="bg-slate-800 text-slate-400 border-slate-700 border text-xs font-mono">
@@ -389,11 +298,8 @@ export default function OpportunityIntelligence() {
                   </Badge>
                 </div>
 
-                {/* Description */}
                 {tender.description && (
-                  <p className="text-sm text-slate-400 leading-relaxed">
-                    {tender.description}
-                  </p>
+                  <p className="text-sm text-slate-400 leading-relaxed">{tender.description}</p>
                 )}
               </CardContent>
             </Card>
@@ -408,29 +314,27 @@ export default function OpportunityIntelligence() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
-                {/* Score dials */}
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                   <ScoreDial
-                    value={65}
+                    value={tender.winProbability != null ? Math.round(tender.winProbability) : null}
                     label="Win Probability"
                     color="#6366f1"
                   />
                   <ScoreDial
-                    value={tender.eligibilityScore ?? 82}
+                    value={tender.eligibilityScore}
                     label="Eligibility Score"
                     color="#10b981"
                   />
                   <ScoreDial
-                    value={tender.opportunityScore ?? 87}
+                    value={tender.opportunityScore}
                     label="Opportunity Score"
                     color="#f59e0b"
                   />
-                  {/* Bid Effort dial — not a %, show as icon badge */}
                   <div className="flex flex-col items-center gap-1">
                     <div className="w-24 h-24 rounded-full border-4 border-amber-500/60 bg-slate-800/80 flex flex-col items-center justify-center gap-1">
                       <Zap className="w-5 h-5 text-amber-400" />
                       <span className="text-sm font-bold text-amber-300">
-                        Medium
+                        {tender.bidEffort ?? "TBC"}
                       </span>
                     </div>
                     <span className="text-xs text-slate-400 text-center leading-tight">
@@ -439,29 +343,23 @@ export default function OpportunityIntelligence() {
                   </div>
                 </div>
 
-                {/* Score bars (supplemental readability) */}
                 <div className="space-y-2 hidden sm:block">
                   {[
-                    {
-                      label: "Eligibility Score",
-                      value: tender.eligibilityScore ?? 82,
-                    },
-                    {
-                      label: "Opportunity Score",
-                      value: tender.opportunityScore ?? 87,
-                    },
-                  ].map((bar) => (
-                    <div key={bar.label} className="space-y-1">
-                      <div className="flex justify-between text-xs text-slate-400">
-                        <span>{bar.label}</span>
-                        <span>{bar.value}%</span>
+                    { label: "Eligibility Score", value: tender.eligibilityScore },
+                    { label: "Opportunity Score", value: tender.opportunityScore },
+                  ]
+                    .filter((b) => b.value != null)
+                    .map((bar) => (
+                      <div key={bar.label} className="space-y-1">
+                        <div className="flex justify-between text-xs text-slate-400">
+                          <span>{bar.label}</span>
+                          <span>{bar.value}%</span>
+                        </div>
+                        <Progress value={bar.value!} className="h-1.5" />
                       </div>
-                      <Progress value={bar.value} className="h-1.5" />
-                    </div>
-                  ))}
+                    ))}
                 </div>
 
-                {/* Recommended action */}
                 <div className="rounded-lg bg-indigo-950/60 border border-indigo-700/50 p-4 flex items-start gap-3">
                   <Target className="w-5 h-5 text-indigo-400 mt-0.5 shrink-0" />
                   <div>
@@ -469,16 +367,16 @@ export default function OpportunityIntelligence() {
                       Recommended Action
                     </p>
                     <p className="text-sm text-slate-200">
-                      <strong className="text-indigo-300">START BID</strong>{" "}
-                      — Strong match for your profile and track record. Address
-                      the Social Value section carefully to maximise your
-                      evaluation score. Resolve Cyber Essentials gap before
-                      submission.
+                      {tender.recommendedAction ?? (
+                        <>
+                          <strong className="text-indigo-300">REVIEW</strong> — Review the requirements
+                          carefully and assess your eligibility before starting a bid.
+                        </>
+                      )}
                     </p>
                   </div>
                 </div>
 
-                {/* AI quick buttons */}
                 <div className="flex flex-wrap gap-2">
                   <Button
                     size="sm"
@@ -549,16 +447,11 @@ export default function OpportunityIntelligence() {
                       <AlertTriangle className="w-5 h-5 text-red-400 mt-0.5 shrink-0" />
                       <div>
                         <p className="text-sm font-semibold text-red-300 mb-1">
-                          {missingDocs.length} document
-                          {missingDocs.length > 1 ? "s" : ""} missing or
-                          expired
+                          {missingDocs.length} document{missingDocs.length > 1 ? "s" : ""} missing
                         </p>
                         <ul className="text-sm text-red-400 space-y-0.5">
                           {missingDocs.map((d) => (
-                            <li key={d.label}>
-                              · {d.label}
-                              {d.note ? ` — ${d.note}` : ""}
-                            </li>
+                            <li key={d.label}>· {d.label}</li>
                           ))}
                         </ul>
                       </div>
@@ -567,14 +460,42 @@ export default function OpportunityIntelligence() {
                 )}
                 <Card className="bg-slate-900 border-slate-700/60">
                   <CardHeader className="pb-2">
-                    <CardTitle className="text-base text-slate-200">
-                      Required Documents
-                    </CardTitle>
+                    <CardTitle className="text-base text-slate-200">Required Documents</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-2">
-                    {REQUIRED_DOCUMENTS.map((doc) => (
-                      <DocumentRow key={doc.label} doc={doc} />
-                    ))}
+                    {hasDocData ? (
+                      allDocs.map((doc) => (
+                        <DocumentRow key={doc.label} label={doc.label} have={doc.have} note={doc.note} />
+                      ))
+                    ) : (
+                      <p className="text-sm text-slate-500 py-4 text-center">
+                        No document requirements specified for this tender.
+                      </p>
+                    )}
+
+                    {/* Insurance requirements */}
+                    {tender.insuranceRequired && tender.insuranceRequired.length > 0 && (
+                      <div className="mt-4 pt-4 border-t border-slate-700/60">
+                        <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-2">
+                          Insurance Requirements
+                        </p>
+                        {tender.insuranceRequired.map((ins) => (
+                          <DocumentRow key={ins} label={ins} have={true} />
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Accreditations */}
+                    {tender.accreditationsRequired && tender.accreditationsRequired.length > 0 && (
+                      <div className="mt-4 pt-4 border-t border-slate-700/60">
+                        <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-2">
+                          Accreditations Required
+                        </p>
+                        {tender.accreditationsRequired.map((acc) => (
+                          <DocumentRow key={acc} label={acc} have={true} />
+                        ))}
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               </TabsContent>
@@ -583,25 +504,31 @@ export default function OpportunityIntelligence() {
               <TabsContent value="risk" className="space-y-4">
                 <Card className="bg-slate-900 border-slate-700/60">
                   <CardHeader className="pb-2">
-                    <CardTitle className="text-base text-slate-200">
-                      Risk Categories
-                    </CardTitle>
+                    <CardTitle className="text-base text-slate-200">Risk Categories</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-3">
                     <RiskRow
                       label="Delivery Risk"
-                      level="low"
-                      detail="You have the required capability, equipment, and staff resources for this scope of work."
+                      level={parseRiskLevel(tender.deliveryRisk)}
+                      detail={tender.deliveryRisk ?? "Not yet assessed — review your capability and resource availability for this contract scope."}
                     />
                     <RiskRow
                       label="Financial Risk"
-                      level="low"
-                      detail="Contract value is approximately 30% of annual turnover — well within safe limits."
+                      level={parseRiskLevel(tender.financialRisk)}
+                      detail={tender.financialRisk ?? "Not yet assessed — consider contract value relative to your annual turnover."}
                     />
                     <RiskRow
                       label="Bid Effort"
-                      level="medium"
-                      detail="Estimated 40–60 hours of bid writing. Social value and method statement sections require careful drafting."
+                      level={
+                        tender.bidEffort
+                          ? tender.bidEffort.toLowerCase().includes("high")
+                            ? "high"
+                            : tender.bidEffort.toLowerCase().includes("low")
+                            ? "low"
+                            : "medium"
+                          : "unknown"
+                      }
+                      detail={`Estimated bid preparation effort: ${tender.bidEffort ?? "Not assessed — check the ITT for mandatory sections and word limits."}`}
                     />
                   </CardContent>
                 </Card>
@@ -610,34 +537,27 @@ export default function OpportunityIntelligence() {
                   {[
                     {
                       label: "Estimated Bid Cost",
-                      value: "£3,200",
-                      sub: "40–60 hrs bid writing",
+                      value: tender.estimatedBidCost ? formatCurrency(tender.estimatedBidCost) : "TBC",
+                      sub: "Bid preparation cost",
                       color: "text-white",
                     },
                     {
                       label: "Est. Contract Margin",
                       value: "14–18%",
-                      sub: "Based on similar contracts",
+                      sub: "Based on sector averages",
                       color: "text-emerald-400",
                     },
                     {
-                      label: "ROI If Won",
-                      value: "34×",
-                      sub: "Bid cost recovery",
+                      label: "Win Probability",
+                      value: tender.winProbability != null ? `${Math.round(tender.winProbability)}%` : "TBC",
+                      sub: "Based on profile match",
                       color: "text-indigo-400",
                     },
                   ].map((stat) => (
-                    <Card
-                      key={stat.label}
-                      className="bg-slate-900 border-slate-700/60"
-                    >
+                    <Card key={stat.label} className="bg-slate-900 border-slate-700/60">
                       <CardContent className="p-5 text-center space-y-1">
-                        <p className="text-xs text-slate-500 uppercase tracking-wide">
-                          {stat.label}
-                        </p>
-                        <p className={`text-2xl font-bold ${stat.color}`}>
-                          {stat.value}
-                        </p>
+                        <p className="text-xs text-slate-500 uppercase tracking-wide">{stat.label}</p>
+                        <p className={`text-2xl font-bold ${stat.color}`}>{stat.value}</p>
                         <p className="text-xs text-slate-500">{stat.sub}</p>
                       </CardContent>
                     </Card>
@@ -655,61 +575,35 @@ export default function OpportunityIntelligence() {
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    {/* Previous award */}
-                    <div className="rounded-lg bg-emerald-950/40 border border-emerald-800/50 p-4">
-                      <p className="text-xs font-semibold text-emerald-400 uppercase tracking-wide mb-1">
-                        Previous Award to You
-                      </p>
-                      <p className="text-sm text-slate-200 font-medium">
-                        A57 Corridor Improvement Works 2024
-                      </p>
-                      <p className="text-sm text-slate-400">
-                        Contract value: £850,000 · Successfully delivered
-                      </p>
-                    </div>
-
-                    {/* Buyer notes */}
-                    <div className="rounded-lg bg-slate-800/60 border border-slate-700/50 p-4 space-y-1">
-                      <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide">
-                        Buyer Notes
-                      </p>
-                      <p className="text-sm text-slate-300">
-                        Strong existing relationship. They know your work and
-                        quality standards. Bid team contact: TBC — check
-                        Find-a-Tender for named officer.
-                      </p>
-                    </div>
+                    {tender.buyerNotes ? (
+                      <div className="rounded-lg bg-slate-800/60 border border-slate-700/50 p-4 space-y-1">
+                        <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide">
+                          Buyer Notes
+                        </p>
+                        <p className="text-sm text-slate-300">{tender.buyerNotes}</p>
+                      </div>
+                    ) : (
+                      <div className="rounded-lg bg-slate-800/40 border border-slate-700/40 p-4">
+                        <p className="text-sm text-slate-500">
+                          No buyer intelligence recorded for this organisation yet. Research their
+                          procurement history on Find a Tender and Contracts Finder before submitting.
+                        </p>
+                      </div>
+                    )}
 
                     <Separator className="bg-slate-700/60" />
 
-                    {/* Scoring criteria */}
                     <div className="space-y-3">
-                      <p className="text-sm font-semibold text-slate-300">
-                        Known Scoring Criteria
-                      </p>
+                      <p className="text-sm font-semibold text-slate-300">Typical Scoring Criteria</p>
                       {[
-                        {
-                          label: "Quality / Technical",
-                          weight: 60,
-                          color: "bg-indigo-500",
-                        },
-                        {
-                          label: "Price",
-                          weight: 20,
-                          color: "bg-slate-500",
-                        },
-                        {
-                          label: "Social Value",
-                          weight: 20,
-                          color: "bg-emerald-500",
-                        },
+                        { label: "Quality / Technical", weight: 60, color: "bg-indigo-500" },
+                        { label: "Price", weight: 20, color: "bg-slate-500" },
+                        { label: "Social Value", weight: tender.socialValueWeighting ?? 20, color: "bg-emerald-500" },
                       ].map((c) => (
                         <div key={c.label} className="space-y-1">
                           <div className="flex justify-between text-xs text-slate-400">
                             <span>{c.label}</span>
-                            <span className="font-semibold text-slate-200">
-                              {c.weight}%
-                            </span>
+                            <span className="font-semibold text-slate-200">{c.weight}%</span>
                           </div>
                           <div className="h-2 bg-slate-800 rounded-full overflow-hidden">
                             <div
@@ -721,15 +615,12 @@ export default function OpportunityIntelligence() {
                       ))}
                     </div>
 
-                    {/* Framework & social value */}
                     <div className="space-y-2">
                       {tender.framework && (
                         <div className="flex items-center gap-2 text-sm text-slate-400">
                           <FileText className="w-4 h-4 text-slate-500" />
                           <span>Framework:</span>
-                          <span className="text-indigo-300 font-medium">
-                            {tender.framework}
-                          </span>
+                          <span className="text-indigo-300 font-medium">{tender.framework}</span>
                         </div>
                       )}
                       <div className="flex items-center gap-2 text-sm text-slate-400">
@@ -757,56 +648,48 @@ export default function OpportunityIntelligence() {
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-3">
+                    {tender.socialValueRequirements ? (
+                      <div className="rounded-lg bg-slate-800/60 border border-slate-700/50 p-4">
+                        <p className="text-sm text-slate-300">{tender.socialValueRequirements}</p>
+                      </div>
+                    ) : null}
+
                     {[
                       {
                         theme: "Local Employment",
-                        detail:
-                          "Commit to employing ≥30% of workforce from within the contract region.",
-                        suggestion:
-                          "Greenfield currently employs 28 staff in the North West — confirm local headcount for this submission.",
+                        detail: "Commit to employing a percentage of workforce from within the contract region.",
+                        suggestion: `Review ${companyName}'s existing local workforce data and quantify the proportion employed in the relevant region.`,
                       },
                       {
                         theme: "Apprenticeship Commitments",
-                        detail:
-                          "Minimum 1 apprenticeship per £1m contract value.",
-                        suggestion:
-                          "You currently have 2 apprentices. Offer 1 additional placement specifically for this contract.",
+                        detail: "Many public sector contracts require minimum 1 apprenticeship per £1m contract value.",
+                        suggestion: "Document any existing apprentices and consider offering additional placements specifically tied to this contract.",
                       },
                       {
                         theme: "Carbon & Environmental",
-                        detail:
-                          "Net-zero delivery plan, material waste reduction targets, and EV fleet commitment.",
-                        suggestion:
-                          "Reference your ISO 14001 certification and carbon reduction roadmap in your response.",
+                        detail: "Net-zero delivery plan, material waste reduction targets, and sustainable transport commitments.",
+                        suggestion: "Reference any ISO 14001 certification, carbon reduction roadmap, or low-emission fleet in your response.",
                       },
                       {
                         theme: "Community Benefit",
-                        detail:
-                          "Volunteering hours, skills training for local residents, school STEM engagement.",
-                        suggestion:
-                          "Include 2 community engagement days per quarter as a standard offering.",
+                        detail: "Volunteering hours, skills training for local residents, school STEM or vocational engagement.",
+                        suggestion: "Include at least 2 community engagement commitments per quarter as a standard offering in your bid.",
                       },
                       {
                         theme: "Supply Chain (Local SMEs)",
-                        detail:
-                          "Minimum 60% of subcontract spend directed to SMEs in the local area.",
-                        suggestion:
-                          "Document your existing supply chain — the majority are already Manchester-based SMEs.",
+                        detail: "Minimum proportion of subcontract spend directed to SMEs in the local area.",
+                        suggestion: "Document your existing supply chain and highlight any locally-based subcontractors or suppliers.",
                       },
                     ].map((item) => (
                       <div
                         key={item.theme}
                         className="rounded-lg bg-slate-800/60 border border-slate-700/50 p-4 space-y-1.5"
                       >
-                        <p className="text-sm font-semibold text-emerald-300">
-                          {item.theme}
-                        </p>
+                        <p className="text-sm font-semibold text-emerald-300">{item.theme}</p>
                         <p className="text-sm text-slate-400">{item.detail}</p>
                         <div className="flex items-start gap-2 mt-1">
                           <Bot className="w-3.5 h-3.5 text-indigo-400 mt-0.5 shrink-0" />
-                          <p className="text-xs text-indigo-300 italic">
-                            {item.suggestion}
-                          </p>
+                          <p className="text-xs text-indigo-300 italic">{item.suggestion}</p>
                         </div>
                       </div>
                     ))}
@@ -823,7 +706,6 @@ export default function OpportunityIntelligence() {
 
           {/* ── Sidebar (desktop only) ─────────────────────────────────────── */}
           <aside className="hidden lg:flex flex-col gap-4 w-72 shrink-0">
-            {/* Quick stats summary */}
             <Card className="bg-slate-900 border-slate-700/60">
               <CardHeader className="pb-2">
                 <CardTitle className="text-xs text-slate-400 uppercase tracking-wide">
@@ -834,17 +716,17 @@ export default function OpportunityIntelligence() {
                 {[
                   {
                     label: "Win Probability",
-                    value: "65%",
+                    value: tender.winProbability != null ? `${Math.round(tender.winProbability)}%` : "—",
                     color: "text-indigo-400",
                   },
                   {
                     label: "Eligibility",
-                    value: `${tender.eligibilityScore ?? 82}%`,
+                    value: tender.eligibilityScore != null ? `${tender.eligibilityScore}%` : "—",
                     color: "text-emerald-400",
                   },
                   {
                     label: "Opportunity Score",
-                    value: `${tender.opportunityScore ?? 87}%`,
+                    value: tender.opportunityScore != null ? `${tender.opportunityScore}%` : "—",
                     color: "text-amber-400",
                   },
                   {
@@ -859,44 +741,36 @@ export default function OpportunityIntelligence() {
                   },
                   {
                     label: "Est. Bid Cost",
-                    value: "£3,200",
+                    value: tender.estimatedBidCost ? formatCurrency(tender.estimatedBidCost) : "TBC",
                     color: "text-slate-200",
                   },
-                  {
-                    label: "Est. Margin",
-                    value: "14–18%",
-                    color: "text-emerald-400",
-                  },
                 ].map((stat) => (
-                  <div
-                    key={stat.label}
-                    className="flex items-center justify-between"
-                  >
+                  <div key={stat.label} className="flex items-center justify-between">
                     <span className="text-xs text-slate-500">{stat.label}</span>
-                    <span className={`text-sm font-bold ${stat.color}`}>
-                      {stat.value}
-                    </span>
+                    <span className={`text-sm font-bold ${stat.color}`}>{stat.value}</span>
                   </div>
                 ))}
               </CardContent>
             </Card>
 
-            {/* Similar opportunities */}
             <Card className="bg-slate-900 border-slate-700/60">
               <CardHeader className="pb-2">
                 <CardTitle className="text-xs text-slate-400 uppercase tracking-wide flex items-center gap-1.5">
                   <TrendingUp className="w-3.5 h-3.5" />
-                  Similar Opportunities
+                  More Opportunities
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-2">
-                {SIMILAR_OPPORTUNITIES.map((opp) => (
-                  <SimilarCard key={opp.id} opp={opp} />
-                ))}
+              <CardContent>
+                <Link
+                  to={ROUTES.tenders}
+                  className="block p-3 rounded-lg bg-slate-800/60 border border-slate-700/50 hover:border-indigo-500/40 hover:bg-slate-800 transition-all text-center"
+                >
+                  <p className="text-sm font-medium text-indigo-300">Browse all tenders</p>
+                  <p className="text-xs text-slate-500 mt-0.5">Discover more opportunities</p>
+                </Link>
               </CardContent>
             </Card>
 
-            {/* Action buttons — sidebar */}
             <div className="space-y-2">
               <Button
                 className="w-full bg-indigo-600 hover:bg-indigo-500 text-white gap-2"
@@ -963,7 +837,6 @@ export default function OpportunityIntelligence() {
           </div>
         </div>
 
-        {/* Spacer so mobile sticky bar doesn't overlap last content */}
         <div className="lg:hidden h-20" />
       </div>
     </div>

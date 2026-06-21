@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient, UseQueryOptions } from "@tanstack/react-query"
 import { api, setToken } from "@/lib/api"
 import type {
-  Company, Tender, Bid, BidQuestion, Contract, Document, Evidence,
+  Company, Tender, OpportunityDetail, Bid, BidQuestion, Contract, Document, Evidence,
   Partner, Buyer, CalendarEvent, DashboardStats, ReadinessProfile,
   PricingCalc,
 } from "@/types"
@@ -132,10 +132,10 @@ export function useTenders(filters?: TenderFilters) {
   })
 }
 
-export function useTender(id: string, options?: UseQueryOptions<Tender>) {
+export function useTender(id: string, options?: UseQueryOptions<OpportunityDetail>) {
   return useQuery({
     queryKey: QK.tender(id),
-    queryFn: () => api.get<Tender>(`/api/tenders/${id}`),
+    queryFn: () => api.get<OpportunityDetail>(`/api/tenders/${id}`),
     enabled: !!id,
     ...options,
   })
