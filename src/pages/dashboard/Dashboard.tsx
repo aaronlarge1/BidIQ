@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import { motion } from "framer-motion"
 import { Link } from "react-router-dom"
 import {
@@ -28,16 +28,6 @@ const fadeUp = (delay = 0) => ({
   transition: { duration: 0.35, delay, ease: "easeOut" as const },
 })
 
-// ─── Pipeline chart data (illustrative) ──────────────────────────────────────
-
-const PIPELINE_DATA = [
-  { month: "Jan", value: 0 },
-  { month: "Feb", value: 280_000 },
-  { month: "Mar", value: 620_000 },
-  { month: "Apr", value: 1_800_000 },
-  { month: "May", value: 2_600_000 },
-  { month: "Jun", value: 4_200_000 },
-]
 
 const DONUT_COLORS = ["#1e3055", "#e5e7eb"]
 
@@ -110,7 +100,7 @@ function AiModal({ onClose }: { onClose: () => void }) {
           <XCircle className="h-5 w-5" />
         </button>
         <div className="mb-4 flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#1e3055]">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-navy-900">
             <Bot className="h-5 w-5 text-white" />
           </div>
           <div>
@@ -128,7 +118,7 @@ function AiModal({ onClose }: { onClose: () => void }) {
             <li>"Draft a social value section for this bid"</li>
           </ul>
         </div>
-        <Button onClick={onClose} className="w-full bg-[#1e3055] text-white hover:bg-[#162540]">
+        <Button onClick={onClose} className="w-full bg-navy-900 text-white hover:bg-navy-950">
           Got it
         </Button>
       </motion.div>
@@ -160,6 +150,32 @@ export default function Dashboard() {
     .slice(0, 4)
 
   const recommendedTenders = (tendersData?.tenders ?? []).slice(0, 3)
+
+  // Real pipeline data: bid value grouped by deadline month (last 6 months)
+  const pipelineData = useMemo(() => {
+    const allBids = bidsData ?? []
+    const now = new Date()
+    const slots = Array.from({ length: 6 }, (_, i) => {
+      const d = new Date(now.getFullYear(), now.getMonth() - (5 - i), 1)
+      return {
+        month: d.toLocaleString("en-GB", { month: "short" }),
+        year: d.getFullYear(),
+        monthIndex: d.getMonth(),
+        value: 0,
+      }
+    })
+    allBids.forEach((bid) => {
+      if (!bid.value) return
+      const deadline = new Date(bid.deadline)
+      const slot = slots.find(
+        (s) => s.year === deadline.getFullYear() && s.monthIndex === deadline.getMonth()
+      )
+      if (slot) slot.value += bid.value
+    })
+    return slots.map(({ month, value }) => ({ month, value }))
+  }, [bidsData])
+
+  const hasPipelineData = pipelineData.some((d) => d.value > 0)
 
   const readinessScore = stats?.readinessScore ?? 0
   const readinessDonut = [
@@ -208,11 +224,11 @@ export default function Dashboard() {
       title: "Active Bids",
       value: statsLoading ? "—" : stats?.activeBids ?? 0,
       sub: "In your pipeline",
-      icon: <FileText className="h-5 w-5 text-[#1e3055]" />,
+      icon: <FileText className="h-5 w-5 text-navy-900" />,
       accent: "border-l-[#1e3055]",
       href: ROUTES.pipeline,
       badge: (
-        <span className="rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-[#1e3055]">
+        <span className="rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-navy-900">
           Pipeline
         </span>
       ),
@@ -260,11 +276,11 @@ export default function Dashboard() {
       title: "Estimated Win Rate",
       value: statsLoading ? "—" : `${stats?.estimatedWinRate ?? 0}%`,
       sub: "Based on current pipeline",
-      icon: <TrendingUp className="h-5 w-5 text-[#1e3055]" />,
+      icon: <TrendingUp className="h-5 w-5 text-navy-900" />,
       accent: "border-l-[#1e3055]",
       href: ROUTES.pipeline,
       badge: (
-        <span className="rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-[#1e3055]">
+        <span className="rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-navy-900">
           Benchmark: 28%
         </span>
       ),
@@ -289,32 +305,70 @@ export default function Dashboard() {
       {aiModalOpen && <AiModal onClose={() => setAiModalOpen(false)} />}
 
       <div className="min-h-screen bg-gray-50 pb-16">
-        <div className="mx-auto max-w-screen-2xl px-4 py-6 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-screen-2xl px-4 py-5 sm:px-6 lg:px-8">
 
           {/* ─── Welcome Banner ─────────────────────────────────────────── */}
           <motion.div {...fadeUp(0)} className="mb-6">
-            <div className="relative overflow-hidden rounded-2xl bg-[#1e3055] px-6 py-7 text-white shadow-lg sm:px-8">
-              <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-[#2a4a7f]/40 via-transparent to-transparent" />
-              <div className="relative flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <h1 className="text-xl font-bold sm:text-2xl">
-                    Welcome back, {company?.name ?? "your organisation"} 👋
-                  </h1>
-                  <p className="mt-1 text-sm text-blue-200 sm:text-base">
-                    Here's your procurement snapshot for today
-                  </p>
+            <div className="relative overflow-hidden rounded-2xl shadow-navy" style={{ background: "linear-gradient(135deg, #0f1f38 0%, #1e3055 50%, #1a3a6b 100%)" }}>
+              {/* Grid overlay */}
+              <div className="pointer-events-none absolute inset-0 opacity-[0.04]" style={{
+                backgroundImage: "linear-gradient(rgba(255,255,255,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.5) 1px, transparent 1px)",
+                backgroundSize: "48px 48px",
+              }} />
+              {/* Glow */}
+              <div className="pointer-events-none absolute top-0 right-0 h-48 w-48 bg-govgreen-500/15 blur-3xl" />
+              <div className="pointer-events-none absolute bottom-0 left-1/3 h-32 w-32 bg-blue-500/10 blur-2xl" />
+
+              <div className="relative px-6 py-7 sm:px-8">
+                <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <h1 className="text-xl font-black text-white sm:text-2xl tracking-tight">
+                        {company?.name ?? "Welcome back"}
+                      </h1>
+                      <span className="text-xl">👋</span>
+                    </div>
+                    <p className="text-sm text-blue-200/70">
+                      Here's your procurement intelligence snapshot
+                    </p>
+                  </div>
+                  <div className="mt-3 flex items-center gap-2 sm:mt-0">
+                    <div className="flex items-center gap-1.5 rounded-full bg-govgreen-500/20 border border-govgreen-400/30 px-3 py-1.5 text-xs font-semibold text-govgreen-300">
+                      <div className="h-1.5 w-1.5 rounded-full bg-govgreen-400" />
+                      Live data
+                    </div>
+                    <Badge className="border-blue-400/30 bg-blue-400/15 text-blue-100 hover:bg-blue-400/15 text-xs font-semibold">
+                      Growth Plan
+                    </Badge>
+                  </div>
                 </div>
-                <div className="mt-3 flex items-center gap-3 sm:mt-0">
-                  <Badge className="border-blue-400/40 bg-blue-400/20 text-blue-100 hover:bg-blue-400/20">
-                    Growth Plan
-                  </Badge>
+
+                {/* AI recommendation strip */}
+                <div className="mt-5 flex items-center gap-3 rounded-xl bg-white/6 border border-white/10 px-4 py-3">
+                  <div className="h-8 w-8 rounded-lg bg-govgreen-600 flex items-center justify-center shrink-0">
+                    <Bot className="h-4 w-4 text-white" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-semibold text-govgreen-300 mb-0.5">AI Recommendation</p>
+                    <p className="text-sm text-blue-100/80 truncate">
+                      {(stats?.complianceGaps ?? 0) > 0
+                        ? `Fix ${stats?.complianceGaps} compliance gap${(stats?.complianceGaps ?? 0) > 1 ? "s" : ""} before your next bid submission`
+                        : "You're bid-ready — check today's matched opportunities"
+                      }
+                    </p>
+                  </div>
+                  <Button size="sm" variant="outline" className="shrink-0 rounded-full border-white/20 text-white hover:bg-white/10 text-xs h-8 px-3" asChild>
+                    <a href={(stats?.complianceGaps ?? 0) > 0 ? ROUTES.compliance : ROUTES.tenders}>
+                      Action <ArrowRight className="ml-1 h-3 w-3" />
+                    </a>
+                  </Button>
                 </div>
               </div>
             </div>
           </motion.div>
 
           {/* ─── Stats Cards (2×4 grid) ─────────────────────────────────── */}
-          <div className="mb-8 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+          <div className="mb-6 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
             {statsLoading
               ? Array.from({ length: 8 }).map((_, i) => (
                   <StatSkeleton key={i} />
@@ -323,17 +377,17 @@ export default function Dashboard() {
                   <motion.div key={card.title} {...fadeUp(i * 0.05)}>
                     <Link to={card.href} className="block h-full">
                       <Card
-                        className={`h-full cursor-pointer border-l-4 bg-white shadow-sm transition-shadow hover:shadow-md ${card.accent}`}
+                        className={`h-full cursor-pointer border-l-4 bg-white shadow-card hover:shadow-card-hover hover:-translate-y-0.5 transition-all duration-200 ${card.accent}`}
                       >
                         <CardContent className="p-4">
                           <div className="mb-2 flex items-start justify-between gap-2">
-                            <div className="rounded-lg bg-gray-50 p-2">{card.icon}</div>
+                            <div className="rounded-xl bg-slate-50 border border-slate-100 p-2">{card.icon}</div>
                             {card.badge}
                           </div>
-                          <div className="mt-1 text-2xl font-bold text-gray-900 sm:text-3xl">
+                          <div className="mt-1 text-2xl font-black text-navy-900 sm:text-3xl tracking-tight">
                             {card.value}
                           </div>
-                          <div className="mt-0.5 text-xs text-gray-500">{card.title}</div>
+                          <div className="mt-0.5 text-xs text-slate-500 font-medium">{card.title}</div>
                           {card.extra}
                         </CardContent>
                       </Card>
@@ -374,7 +428,7 @@ export default function Dashboard() {
                         <p className="mt-1 text-xs text-gray-400">
                           Find a tender and start your first bid
                         </p>
-                        <Button asChild size="sm" className="mt-4 bg-[#1e3055] text-white hover:bg-[#162540]">
+                        <Button asChild size="sm" className="mt-4 bg-navy-900 text-white hover:bg-navy-950">
                           <Link to={ROUTES.tenders}>Find Tenders</Link>
                         </Button>
                       </div>
@@ -440,31 +494,42 @@ export default function Dashboard() {
                 <Card className="bg-white shadow-sm">
                   <CardHeader className="pb-2">
                     <CardTitle className="text-base font-semibold text-gray-900">
-                      Pipeline Growth — Illustrative Trajectory
+                      Pipeline by Deadline Month
                     </CardTitle>
                     <CardDescription className="text-xs text-gray-500">
-                      Example pipeline growth for an SME using BidIQ Pro
+                      Active bid value grouped by submission deadline
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="pt-0">
-                    <ResponsiveContainer width="100%" height={220}>
-                      <BarChart data={PIPELINE_DATA} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
-                        <XAxis dataKey="month" tick={{ fontSize: 11, fill: "#9ca3af" }} axisLine={false} tickLine={false} />
-                        <YAxis
-                          tickFormatter={(v) => v >= 1_000_000 ? `£${v / 1_000_000}m` : v >= 1000 ? `£${v / 1000}k` : `£${v}`}
-                          tick={{ fontSize: 11, fill: "#9ca3af" }}
-                          axisLine={false}
-                          tickLine={false}
-                          width={52}
-                        />
-                        <RechartsTooltip
-                          formatter={(value: number) => [formatCurrency(value), "Pipeline Value"]}
-                          contentStyle={{ borderRadius: "8px", border: "1px solid #e5e7eb", fontSize: 12 }}
-                        />
-                        <Bar dataKey="value" fill="#1e3055" radius={[4, 4, 0, 0]} maxBarSize={56} />
-                      </BarChart>
-                    </ResponsiveContainer>
+                    {hasPipelineData ? (
+                      <ResponsiveContainer width="100%" height={220}>
+                        <BarChart data={pipelineData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
+                          <XAxis dataKey="month" tick={{ fontSize: 11, fill: "#9ca3af" }} axisLine={false} tickLine={false} />
+                          <YAxis
+                            tickFormatter={(v) => v >= 1_000_000 ? `£${v / 1_000_000}m` : v >= 1000 ? `£${v / 1000}k` : `£${v}`}
+                            tick={{ fontSize: 11, fill: "#9ca3af" }}
+                            axisLine={false}
+                            tickLine={false}
+                            width={52}
+                          />
+                          <RechartsTooltip
+                            formatter={(value: number) => [formatCurrency(value), "Pipeline Value"]}
+                            contentStyle={{ borderRadius: "8px", border: "1px solid #e5e7eb", fontSize: 12 }}
+                          />
+                          <Bar dataKey="value" fill="#1e3055" radius={[4, 4, 0, 0]} maxBarSize={56} />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    ) : (
+                      <div className="flex h-[220px] flex-col items-center justify-center text-center">
+                        <TrendingUp className="mb-3 h-8 w-8 text-gray-200" />
+                        <p className="text-sm font-medium text-gray-400">No pipeline data yet</p>
+                        <p className="mt-1 text-xs text-gray-400">Add bids to see your pipeline by deadline month</p>
+                        <Button asChild size="sm" className="mt-4 bg-[#1e3055] text-white hover:bg-[#162540]">
+                          <Link to={ROUTES.pipeline}>Add a Bid</Link>
+                        </Button>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               </motion.div>
@@ -487,7 +552,7 @@ export default function Dashboard() {
                       <div className="py-4 text-center">
                         <Clock className="mx-auto mb-2 h-6 w-6 text-gray-300" />
                         <p className="text-xs text-gray-400">No upcoming events</p>
-                        <Link to={ROUTES.calendar} className="mt-1 block text-xs font-medium text-[#1e3055] hover:underline">
+                        <Link to={ROUTES.calendar} className="mt-1 block text-xs font-medium text-navy-900 hover:underline">
                           Add calendar events
                         </Link>
                       </div>
@@ -513,7 +578,7 @@ export default function Dashboard() {
                     {upcomingCalendar.length > 0 && (
                       <>
                         <Separator className="my-1" />
-                        <Link to={ROUTES.calendar} className="flex items-center gap-1 text-xs font-medium text-[#1e3055] hover:underline">
+                        <Link to={ROUTES.calendar} className="flex items-center gap-1 text-xs font-medium text-navy-900 hover:underline">
                           View full calendar <ArrowRight className="h-3 w-3" />
                         </Link>
                       </>
@@ -581,7 +646,7 @@ export default function Dashboard() {
                           </Pie>
                         </PieChart>
                         <div className="absolute inset-0 flex items-center justify-center">
-                          <span className="text-sm font-bold text-[#1e3055]">{readinessScore}%</span>
+                          <span className="text-sm font-bold text-navy-900">{readinessScore}%</span>
                         </div>
                       </div>
                       <div>
@@ -595,7 +660,7 @@ export default function Dashboard() {
                     </div>
 
                     {readinessScore === 0 ? (
-                      <Button asChild size="sm" className="w-full bg-[#1e3055] text-white hover:bg-[#162540]">
+                      <Button asChild size="sm" className="w-full bg-navy-900 text-white hover:bg-navy-950">
                         <Link to={ROUTES.readiness}>
                           Start Readiness Check <ArrowRight className="ml-1 h-3 w-3" />
                         </Link>
@@ -617,7 +682,7 @@ export default function Dashboard() {
                           )}
                         </div>
                         <Separator className="my-3" />
-                        <Link to={ROUTES.readiness} className="flex items-center gap-1 text-xs font-medium text-[#1e3055] hover:underline">
+                        <Link to={ROUTES.readiness} className="flex items-center gap-1 text-xs font-medium text-navy-900 hover:underline">
                           View Full Report <ArrowRight className="h-3 w-3" />
                         </Link>
                       </>
@@ -632,20 +697,20 @@ export default function Dashboard() {
           {/* ─── Quick Actions ──────────────────────────────────────────── */}
           <motion.div {...fadeUp(0.42)} className="mt-8">
             <div className="mb-3 flex items-center gap-2">
-              <Zap className="h-4 w-4 text-[#1e3055]" />
+              <Zap className="h-4 w-4 text-navy-900" />
               <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">Quick Actions</h2>
             </div>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-              <Button asChild variant="outline" className="h-14 flex-col gap-1 border-[#1e3055]/20 bg-white text-xs font-medium text-[#1e3055] hover:bg-[#1e3055] hover:text-white transition-colors">
+              <Button asChild variant="outline" className="h-14 flex-col gap-1 border-[#1e3055]/20 bg-white text-xs font-medium text-navy-900 hover:bg-navy-900 hover:text-white transition-colors">
                 <Link to={ROUTES.tenders}><Search className="h-4 w-4" />Find Tenders</Link>
               </Button>
-              <Button asChild variant="outline" className="h-14 flex-col gap-1 border-[#1e3055]/20 bg-white text-xs font-medium text-[#1e3055] hover:bg-[#1e3055] hover:text-white transition-colors">
+              <Button asChild variant="outline" className="h-14 flex-col gap-1 border-[#1e3055]/20 bg-white text-xs font-medium text-navy-900 hover:bg-navy-900 hover:text-white transition-colors">
                 <Link to={ROUTES.bids}><FileText className="h-4 w-4" />Write a Bid</Link>
               </Button>
-              <Button asChild variant="outline" className="h-14 flex-col gap-1 border-[#1e3055]/20 bg-white text-xs font-medium text-[#1e3055] hover:bg-[#1e3055] hover:text-white transition-colors">
+              <Button asChild variant="outline" className="h-14 flex-col gap-1 border-[#1e3055]/20 bg-white text-xs font-medium text-navy-900 hover:bg-navy-900 hover:text-white transition-colors">
                 <Link to={ROUTES.compliance}><AlertTriangle className="h-4 w-4" />Check Compliance</Link>
               </Button>
-              <Button variant="outline" onClick={() => setAiModalOpen(true)} className="h-14 flex-col gap-1 border-[#1e3055]/20 bg-white text-xs font-medium text-[#1e3055] hover:bg-[#1e3055] hover:text-white transition-colors">
+              <Button variant="outline" onClick={() => setAiModalOpen(true)} className="h-14 flex-col gap-1 border-[#1e3055]/20 bg-white text-xs font-medium text-navy-900 hover:bg-navy-900 hover:text-white transition-colors">
                 <Bot className="h-4 w-4" />Ask AI Assistant
               </Button>
             </div>
@@ -655,12 +720,12 @@ export default function Dashboard() {
           <motion.div {...fadeUp(0.48)} className="mt-8">
             <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
               <div className="flex items-center gap-2">
-                <LayoutGrid className="h-4 w-4 text-[#1e3055]" />
+                <LayoutGrid className="h-4 w-4 text-navy-900" />
                 <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">
                   Recommended for You
                 </h2>
               </div>
-              <Link to={ROUTES.tenders} className="flex items-center gap-1 text-xs font-medium text-[#1e3055] hover:underline">
+              <Link to={ROUTES.tenders} className="flex items-center gap-1 text-xs font-medium text-navy-900 hover:underline">
                 Browse all tenders <ArrowRight className="h-3 w-3" />
               </Link>
             </div>
@@ -691,7 +756,7 @@ export default function Dashboard() {
                           <div className="mb-3 flex flex-wrap items-start justify-between gap-2">
                             <ScoreBadge score={tender.opportunityScore ?? 70} />
                             {tender.smeFlag && (
-                              <span className="rounded-full bg-[#1e3055]/10 px-2 py-0.5 text-xs font-medium text-[#1e3055]">
+                              <span className="rounded-full bg-navy-50 px-2 py-0.5 text-xs font-medium text-navy-900">
                                 SME-friendly
                               </span>
                             )}
@@ -704,7 +769,7 @@ export default function Dashboard() {
                             </span>
                             <span className={daysColor}>{daysLabel}</span>
                           </div>
-                          <Button asChild size="sm" className="w-full bg-[#1e3055] text-white hover:bg-[#162540]">
+                          <Button asChild size="sm" className="w-full bg-navy-900 text-white hover:bg-navy-950">
                             <Link to={ROUTES.tender(tender.id)}>
                               View Opportunity <ArrowRight className="ml-1 h-3 w-3" />
                             </Link>

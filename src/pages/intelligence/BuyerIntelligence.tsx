@@ -4,10 +4,6 @@ import {
   MapPin, Users, ChevronRight, ExternalLink,
   Bell, Plus, Star, Trophy, AlertCircle,
 } from "lucide-react"
-import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid,
-  Tooltip as RechartsTooltip, ResponsiveContainer,
-} from "recharts"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -19,7 +15,7 @@ import {
 import { Separator } from "@/components/ui/separator"
 import { useBuyers, useCompany } from "@/hooks/useApi"
 import { formatCurrency, formatDate } from "@/lib/utils"
-import type { Buyer } from "@/types"
+import type { Buyer, Company } from "@/types"
 
 // ─── Buyer type badge config ──────────────────────────────────────────────────
 
@@ -43,50 +39,6 @@ const FILTER_TABS = [
   { key: "education",        label: "Education" },
 ] as const
 
-// ─── Spend chart data for selected buyer ─────────────────────────────────────
-
-const NH_SPEND_DATA = [
-  { year: "2022", spend: 2.1 },
-  { year: "2023", spend: 2.4 },
-  { year: "2024", spend: 2.6 },
-  { year: "2025", spend: 2.8 },
-  { year: "2026*", spend: 3.1 },
-]
-
-// ─── Upcoming opportunities for NH ───────────────────────────────────────────
-
-const NH_UPCOMING = [
-  {
-    id: "u-001",
-    title: "Regional Highways Maintenance Framework",
-    description: "Multi-supplier framework covering planned and reactive maintenance across North of England. SME lots available.",
-    expected: "Q3 2026",
-    expectedDate: "September 2026",
-    status: "expected" as const,
-    value: "£50m – £120m (framework)",
-    sme: true,
-  },
-  {
-    id: "u-002",
-    title: "North West Drainage Framework 2027",
-    description: "Drainage inspection, cleansing and repair works. Previous incumbent: consortium including Greenfield.",
-    expected: "Q1 2027",
-    expectedDate: "February 2027",
-    status: "expected" as const,
-    value: "£8m – £15m",
-    sme: true,
-  },
-  {
-    id: "u-003",
-    title: "A57 Corridor Works — Renewal",
-    description: "Direct renewal of your current 2024 contract. Renewal window opens July 2027.",
-    expected: "Q2 2027",
-    expectedDate: "July 2027",
-    status: "renewal" as const,
-    value: "~£850k",
-    sme: false,
-  },
-]
 
 // ─── Relationship score bar ───────────────────────────────────────────────────
 
@@ -206,9 +158,15 @@ function BuyerCard({
 
 // ─── Buyer Detail Panel ───────────────────────────────────────────────────────
 
-function BuyerDetailPanel({ buyer, companyName }: { buyer: Buyer; companyName: string }) {
+function BuyerDetailPanel({ buyer, companyName, company }: { buyer: Buyer; companyName: string; company?: Company }) {
   const typeMeta = buyerTypeMeta[buyer.type] ?? { label: buyer.type, className: "bg-gray-100 text-gray-700" }
-  const isNH = buyer.id === "by-001"
+  const ourAwardCount = companyName
+    ? buyer.previousAwards.filter((a) => a.supplier === companyName).length
+    : 0
+  const relationshipScore = ourAwardCount >= 3 ? 90 : ourAwardCount === 2 ? 82 : ourAwardCount >= 1 ? 72 : 20
+  const relationshipDesc = ourAwardCount > 0
+    ? `${ourAwardCount} prior contract${ourAwardCount > 1 ? "s" : ""} with this buyer — established supplier`
+    : "No prior contract history with this buyer — new relationship"
 
   return (
     <Card className="bg-white shadow-sm">
@@ -237,12 +195,8 @@ function BuyerDetailPanel({ buyer, companyName }: { buyer: Buyer; companyName: s
           {/* Relationship score */}
           <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 min-w-[220px]">
             <p className="text-xs font-medium text-gray-500 mb-1.5">Your relationship score</p>
-            <RelationshipBar score={isNH ? 78 : 85} />
-            <p className="text-xs text-gray-400 mt-2">
-              {isNH
-                ? "Based on 1 prior contract award and known supplier status"
-                : "Current contract holder — strong relationship"}
-            </p>
+            <RelationshipBar score={relationshipScore} />
+            <p className="text-xs text-gray-400 mt-2">{relationshipDesc}</p>
           </div>
         </div>
       </CardHeader>
@@ -313,38 +267,6 @@ function BuyerDetailPanel({ buyer, companyName }: { buyer: Buyer; companyName: s
               </Table>
             </div>
 
-            {/* Spend chart */}
-            {isNH && (
-              <div className="mt-6">
-                <h4 className="text-sm font-semibold text-gray-700 mb-3">
-                  National Highways Annual Spend — Historical Trend
-                </h4>
-                <ResponsiveContainer width="100%" height={180}>
-                  <BarChart data={NH_SPEND_DATA} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
-                    <XAxis
-                      dataKey="year"
-                      tick={{ fontSize: 11, fill: "#9ca3af" }}
-                      axisLine={false}
-                      tickLine={false}
-                    />
-                    <YAxis
-                      tickFormatter={(v) => `£${v}bn`}
-                      tick={{ fontSize: 11, fill: "#9ca3af" }}
-                      axisLine={false}
-                      tickLine={false}
-                      width={48}
-                    />
-                    <RechartsTooltip
-                      formatter={(v: number) => [`£${v}bn`, "Annual Spend"]}
-                      contentStyle={{ borderRadius: "8px", border: "1px solid #e5e7eb", fontSize: 12 }}
-                    />
-                    <Bar dataKey="spend" fill="#1e3055" radius={[4, 4, 0, 0]} maxBarSize={48} />
-                  </BarChart>
-                </ResponsiveContainer>
-                <p className="text-xs text-gray-400 mt-1">* 2026 estimated. Source: National Highways annual report / DEMO data.</p>
-              </div>
-            )}
           </TabsContent>
 
           {/* ── TAB 2: Upcoming Opportunities ── */}
@@ -356,63 +278,23 @@ function BuyerDetailPanel({ buyer, companyName }: { buyer: Buyer; companyName: s
               </p>
             </div>
 
-            <div className="space-y-4">
-              {(isNH ? NH_UPCOMING : [
-                {
-                  id: "u-stk-001",
-                  title: "Winter Maintenance Contract 2026–29",
-                  description: "Renewal of your current gritting and snow clearance contract. You are the incumbent supplier — high probability of renewal.",
-                  expected: "July 2026",
-                  expectedDate: "25 July 2026",
-                  status: "renewal" as const,
-                  value: "~£340k",
-                  sme: true,
-                },
-                {
-                  id: "u-stk-002",
-                  title: "Highway Reactive Maintenance 2027",
-                  description: "Planned tender for reactive carriageway and footway maintenance across the Stockport network.",
-                  expected: "Q1 2027",
-                  expectedDate: "March 2027",
-                  status: "expected" as const,
-                  value: "£200k – £600k",
-                  sme: true,
-                },
-              ]).map((opp) => (
-                <div
-                  key={opp.id}
-                  className={`rounded-xl border p-5 ${
-                    opp.status === "renewal"
-                      ? "border-green-200 bg-green-50"
-                      : "border-gray-100 bg-white shadow-sm"
-                  }`}
-                >
-                  <div className="flex flex-wrap items-start justify-between gap-3">
+            {buyer.upcomingRenewals.length === 0 ? (
+              <div className="rounded-xl border border-dashed border-gray-200 bg-gray-50 p-8 text-center">
+                <Calendar className="h-8 w-8 text-gray-300 mx-auto mb-2" />
+                <p className="text-sm text-gray-500">No upcoming renewals identified yet</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {buyer.upcomingRenewals.map((renewal, i) => (
+                  <div
+                    key={i}
+                    className="rounded-xl border border-gray-100 bg-white shadow-sm p-4 flex flex-wrap items-center justify-between gap-3"
+                  >
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap mb-1">
-                        <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-                          opp.status === "renewal"
-                            ? "bg-green-600 text-white"
-                            : "bg-amber-100 text-amber-700"
-                        }`}>
-                          {opp.status === "renewal" ? "Renewal Opportunity" : "Expected Tender"}
-                        </span>
-                        {opp.sme && (
-                          <span className="inline-flex items-center rounded-full bg-[#1e3055]/10 px-2.5 py-0.5 text-xs font-semibold text-[#1e3055]">
-                            SME Lot
-                          </span>
-                        )}
-                      </div>
-                      <h4 className="font-semibold text-gray-900 text-sm">{opp.title}</h4>
-                      <p className="text-xs text-gray-500 mt-1 leading-relaxed">{opp.description}</p>
-                      <div className="flex items-center gap-4 mt-3 text-xs text-gray-500">
-                        <span className="flex items-center gap-1">
-                          <Calendar className="h-3 w-3" /> Expected: <strong className="text-gray-700 ml-0.5">{opp.expectedDate}</strong>
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <PoundSterling className="h-3 w-3" /> Est. value: <strong className="text-gray-700 ml-0.5">{opp.value}</strong>
-                        </span>
-                      </div>
+                      <span className="inline-flex items-center rounded-full bg-amber-100 text-amber-700 px-2.5 py-0.5 text-xs font-semibold mb-1">
+                        Upcoming Renewal
+                      </span>
+                      <p className="text-sm font-medium text-gray-900">{renewal}</p>
                     </div>
                     <Button
                       size="sm"
@@ -422,9 +304,9 @@ function BuyerDetailPanel({ buyer, companyName }: { buyer: Buyer; companyName: s
                       <Bell className="h-3.5 w-3.5" /> Set Alert
                     </Button>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
 
             <div className="mt-5 rounded-xl border border-dashed border-gray-200 bg-gray-50 p-4 text-center">
               <p className="text-xs text-gray-500">
@@ -507,12 +389,8 @@ function BuyerDetailPanel({ buyer, companyName }: { buyer: Buyer; companyName: s
                   <Star className="h-4 w-4 text-amber-500" />
                   <span className="text-sm font-semibold text-gray-800">Relationship Strength</span>
                 </div>
-                <RelationshipBar score={isNH ? 78 : 85} />
-                <p className="text-xs text-gray-500 mt-3">
-                  {isNH
-                    ? "You hold a prior contract with this buyer. You are on their known supplier list. Strong starting position."
-                    : "You are the current contract holder. Renewal probability is high given your KPI performance."}
-                </p>
+                <RelationshipBar score={relationshipScore} />
+                <p className="text-xs text-gray-500 mt-3">{relationshipDesc}</p>
               </div>
 
               {/* Known competitors */}
@@ -540,32 +418,58 @@ function BuyerDetailPanel({ buyer, companyName }: { buyer: Buyer; companyName: s
               </div>
             </div>
 
-            {/* Your differentiator */}
+            {/* Your competitive strengths */}
             <div className="rounded-xl border border-green-200 bg-green-50 p-5">
               <div className="flex items-center gap-2 mb-2">
                 <TrendingUp className="h-4 w-4 text-green-600" />
-                <span className="text-sm font-semibold text-green-800">Your Differentiator</span>
+                <span className="text-sm font-semibold text-green-800">Your Competitive Strengths</span>
               </div>
-              <p className="text-sm text-green-800 font-medium mb-3">
-                {isNH
-                  ? "Local SME, strong safety record, competitive on price, proven delivery with this buyer"
-                  : "Incumbent with excellent KPI track record, local workforce, competitive price point"}
-              </p>
-              <Separator className="bg-green-200 mb-3" />
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                {[
-                  { label: "ISO Accreditations", value: "3", sub: "9001, 14001, 45001" },
-                  { label: "Safety Record", value: "A+", sub: "No RIDDOR incidents" },
-                  { label: "Local Workforce", value: "94%", sub: "North of England" },
-                  { label: "SME Certified", value: "Yes", sub: "Constructionline Gold" },
-                ].map((stat) => (
-                  <div key={stat.label} className="text-center">
-                    <div className="text-xl font-bold text-green-700">{stat.value}</div>
-                    <div className="text-xs font-medium text-green-800">{stat.label}</div>
-                    <div className="text-xs text-green-600">{stat.sub}</div>
+              {company ? (
+                <>
+                  <p className="text-sm text-green-800 font-medium mb-3">
+                    {ourAwardCount > 0
+                      ? `Established supplier with ${ourAwardCount} prior award${ourAwardCount > 1 ? "s" : ""} — strong renewal position`
+                      : `Building relationship — active in ${company.regions.slice(0, 2).join(" & ") || "UK"}`}
+                  </p>
+                  <Separator className="bg-green-200 mb-3" />
+                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                    {[
+                      {
+                        label: "Accreditations",
+                        value: company.accreditations.length > 0 ? company.accreditations.length.toString() : "—",
+                        sub: company.accreditations.length > 0
+                          ? company.accreditations.slice(0, 2).map((a) => a.replace(/-/g, " ").toUpperCase()).join(", ")
+                          : "None listed",
+                      },
+                      {
+                        label: "Regions",
+                        value: company.regions.length > 0 ? company.regions.length.toString() : "—",
+                        sub: company.regions.slice(0, 2).join(", ") || "UK-wide",
+                      },
+                      {
+                        label: "Team Size",
+                        value: company.employees > 0 ? company.employees.toString() : "—",
+                        sub: "Employees",
+                      },
+                      {
+                        label: "Turnover",
+                        value: company.turnover > 0 ? formatCurrency(company.turnover) : "—",
+                        sub: "Annual revenue",
+                      },
+                    ].map((stat) => (
+                      <div key={stat.label} className="text-center">
+                        <div className="text-xl font-bold text-green-700">{stat.value}</div>
+                        <div className="text-xs font-medium text-green-800">{stat.label}</div>
+                        <div className="text-xs text-green-600">{stat.sub}</div>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
+                </>
+              ) : (
+                <p className="text-sm text-green-700">
+                  Complete your company profile to see how your strengths compare for this buyer.
+                </p>
+              )}
             </div>
           </TabsContent>
         </Tabs>
@@ -693,7 +597,7 @@ export default function BuyerIntelligence() {
           {/* Buyer detail — right 3 cols */}
           <div className="lg:col-span-3">
             {selectedBuyer ? (
-              <BuyerDetailPanel buyer={selectedBuyer} companyName={companyName} />
+              <BuyerDetailPanel buyer={selectedBuyer} companyName={companyName} company={companyData ?? undefined} />
             ) : (
               <div className="rounded-xl border border-dashed border-gray-200 bg-white p-12 text-center">
                 <Building2 className="h-10 w-10 text-gray-200 mx-auto mb-3" />
