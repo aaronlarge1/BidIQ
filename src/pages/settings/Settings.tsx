@@ -1,7 +1,7 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import {
   Building2, User, Bell, CreditCard, Palette, Download,
-  Plus, Trash2, Save, Eye, EyeOff,
+  Plus, Trash2, Save,
 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -12,7 +12,7 @@ import { Separator } from "@/components/ui/separator"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { DEMO_COMPANY } from "@/lib/demo-data"
+import { useCompany, useUpdateCompany } from "@/hooks/useApi"
 import { PRICING } from "@/lib/constants"
 
 // ─── Simple inline toggle (no Switch component available) ────────────────────
@@ -114,20 +114,32 @@ const EXPORT_OPTIONS = [
 // ─── Settings ─────────────────────────────────────────────────────────────────
 
 export default function Settings() {
-  // Company form state (pre-filled from DEMO_COMPANY)
+  const { data: companyData, isLoading: companyLoading } = useCompany()
+  const updateCompany = useUpdateCompany()
+
   const [company, setCompany] = useState({
-    name: DEMO_COMPANY.name,
-    companyNumber: "12345678",
-    vatNumber: "GB123456789",
-    website: "www.greenfield-infra.co.uk",
-    address1: "Unit 7, Greenfield Business Park",
-    address2: "Trafford Way",
-    city: "Manchester",
-    postcode: "M17 1AB",
-    sector: DEMO_COMPANY.sector,
+    name: "",
+    companyNumber: "",
+    vatNumber: "",
+    website: "",
+    address1: "",
+    address2: "",
+    city: "",
+    postcode: "",
+    sector: "",
     size: "26-50 employees",
-    turnover: "£2,800,000",
+    turnover: "",
   })
+
+  useEffect(() => {
+    if (companyData) {
+      setCompany(prev => ({
+        ...prev,
+        name: companyData.name ?? prev.name,
+        sector: companyData.sector ?? prev.sector,
+      }))
+    }
+  }, [companyData])
 
   // Notification toggles
   const [notifs, setNotifs] = useState<Record<string, boolean>>(
@@ -153,7 +165,6 @@ export default function Settings() {
         <div className="mb-6">
           <div className="flex items-center gap-3">
             <h1 className="text-2xl font-bold text-gray-900">Settings</h1>
-            <Badge variant="outline" className="text-xs">DEMO</Badge>
           </div>
           <p className="mt-1 text-sm text-gray-500">
             Manage your account, company profile, users and billing
@@ -335,16 +346,24 @@ export default function Settings() {
                 <Separator />
 
                 {/* Save */}
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <p className="text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-                    Demo mode — changes are not saved to a real account.
-                  </p>
+                <div className="flex flex-wrap items-center justify-end gap-3">
+                  {updateCompany.isSuccess && (
+                    <p className="text-xs text-green-700 bg-green-50 border border-green-200 rounded-lg px-3 py-2">
+                      Changes saved successfully.
+                    </p>
+                  )}
+                  {updateCompany.isError && (
+                    <p className="text-xs text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+                      Failed to save. Please try again.
+                    </p>
+                  )}
                   <Button
-                    disabled
-                    className="gap-2 bg-[#1e3055] text-white opacity-60"
+                    onClick={() => updateCompany.mutate({ name: company.name, sector: company.sector })}
+                    disabled={updateCompany.isPending || companyLoading}
+                    className="gap-2 bg-[#1e3055] text-white hover:bg-[#162540]"
                   >
                     <Save className="h-4 w-4" />
-                    Save Changes
+                    {updateCompany.isPending ? "Saving..." : "Save Changes"}
                   </Button>
                 </div>
               </CardContent>
@@ -825,7 +844,7 @@ export default function Settings() {
 
         {/* ─── Footer ───────────────────────────────────────────────────── */}
         <p className="mt-8 text-center text-xs text-gray-400">
-          All data shown is demo data for Greenfield Infrastructure Ltd. Settings changes are not persisted in demo mode.
+          BidIQ Pro — your company profile is used to match you with relevant public sector opportunities.
         </p>
 
       </div>

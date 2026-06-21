@@ -4,6 +4,8 @@ export const COMPANY = "Civic Ladder Ltd"
 
 export const ROUTES = {
   home: "/",
+  login: "/login",
+  register: "/register",
   onboarding: "/onboarding",
   dashboard: "/dashboard",
   tenders: "/tenders",

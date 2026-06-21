@@ -1,6 +1,9 @@
 import { useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { useNavigate } from "react-router-dom"
+import { Loader2 } from "lucide-react"
+import { useCreateCompany } from "@/hooks/useApi"
+import { useAuth } from "@/context/AuthContext"
 import {
   CheckCircle2,
   ArrowRight,
@@ -651,7 +654,51 @@ function Step5({ data, onChange }: { data: FormData; onChange: (d: Partial<FormD
 
 function Step6Results({ data }: { data: FormData }) {
   const navigate = useNavigate()
+  const { refreshUser } = useAuth()
+  const createCompany = useCreateCompany()
   const { score, missing, bestCategories, recommendations } = calculateScore(data)
+
+  async function handleGoToDashboard() {
+    try {
+      const turnoverMap: Record<string, number> = {
+        "Under £500k": 250_000,
+        "£500k-£1m": 750_000,
+        "£1m-£3m": 2_000_000,
+        "£3m-£10m": 6_500_000,
+        "£10m+": 15_000_000,
+      }
+      const employeeMap: Record<string, number> = {
+        "1-10": 5, "11-25": 18, "26-50": 38, "51-100": 75, "100+": 150,
+      }
+      const contractValueMap: Record<string, string> = {
+        "Under £10k": "under-100k",
+        "£10k – £50k": "under-100k",
+        "£50k – £250k": "under-100k",
+        "£250k – £1m": "500k-1m",
+        "£1m – £5m": "1m-5m",
+        "£5m+": "5m-plus",
+      }
+      await createCompany.mutateAsync({
+        name: data.companyName,
+        sector: data.sector,
+        services: data.services,
+        turnover: turnoverMap[data.turnover] ?? 0,
+        employees: employeeMap[data.employees] ?? 0,
+        regions: data.regions,
+        insurance: data.insurance.map((i) => i.toLowerCase().replace(/[^a-z-]/g, "").replace(/\s+/g, "-")),
+        policies: data.policies.map((p) => p.toLowerCase().replace(/[^a-z-]/g, "").replace(/\s+/g, "-")),
+        accreditations: data.accreditations.map((a) => a.toLowerCase().replace(/\s+/g, "-")),
+        previousPublicSectorWork: data.previousPublicSector === true,
+        preferredContractValue: contractValueMap[data.preferredContractValue] ?? "100k-500k",
+        interests: data.contractInterests,
+        readinessScore: score,
+      } as Parameters<typeof createCompany.mutateAsync>[0])
+      await refreshUser()
+      navigate(ROUTES.dashboard)
+    } catch {
+      navigate(ROUTES.dashboard)
+    }
+  }
 
   return (
     <div className="space-y-8">
@@ -750,9 +797,12 @@ function Step6Results({ data }: { data: FormData }) {
       >
         <Button
           className="flex-1 bg-[#1e3a5f] hover:bg-[#1e3a5f]/90 text-white"
-          onClick={() => navigate(ROUTES.dashboard)}
+          onClick={handleGoToDashboard}
+          disabled={createCompany.isPending}
         >
-          Go to Your Dashboard <ArrowRight className="ml-2 h-4 w-4" />
+          {createCompany.isPending
+            ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...</>
+            : <>Go to Your Dashboard <ArrowRight className="ml-2 h-4 w-4" /></>}
         </Button>
         <Button
           variant="outline"

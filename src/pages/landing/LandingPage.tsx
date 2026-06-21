@@ -292,7 +292,7 @@ export default function LandingPage() {
               variants={staggerItem}
               className="flex flex-col sm:flex-row gap-4 justify-center mb-10"
             >
-              <Link to={ROUTES.onboarding}>
+              <Link to={ROUTES.register}>
                 <Button
                   size="lg"
                   className="rounded-full bg-govgreen-600 hover:bg-govgreen-500 text-white font-semibold px-8 py-6 text-base shadow-lg shadow-govgreen-900/30 transition-all duration-200"
@@ -572,7 +572,7 @@ export default function LandingPage() {
             viewport={{ once: true, margin: "-80px" }}
             variants={fadeUp}
           >
-            <Link to={ROUTES.onboarding}>
+            <Link to={ROUTES.register}>
               <Button
                 size="lg"
                 className="rounded-full bg-navy-900 hover:bg-navy-800 text-white font-semibold px-8 py-6 text-base shadow-md"
@@ -856,7 +856,7 @@ export default function LandingPage() {
 
                     {/* CTA */}
                     <Link
-                      to={plan.cta === "Book Demo" ? "#" : ROUTES.onboarding}
+                      to={plan.cta === "Book Demo" ? "#" : ROUTES.register}
                     >
                       <Button
                         size="lg"
@@ -1042,7 +1042,7 @@ export default function LandingPage() {
               variants={staggerItem}
               className="flex flex-col sm:flex-row gap-4 justify-center"
             >
-              <Link to={ROUTES.onboarding}>
+              <Link to={ROUTES.register}>
                 <Button
                   size="lg"
                   className="rounded-full bg-govgreen-600 hover:bg-govgreen-500 text-white font-semibold px-10 py-6 text-base shadow-lg shadow-govgreen-900/30"
