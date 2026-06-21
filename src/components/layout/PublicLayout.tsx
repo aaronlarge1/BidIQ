@@ -120,43 +120,65 @@ export default function PublicLayout() {
               animate={{ opacity: 1, height: "auto" }}
               exit={{ opacity: 0, height: 0 }}
               transition={{ duration: 0.2, ease: "easeOut" }}
-              className="md:hidden overflow-hidden bg-white border-t border-gray-100 shadow-lg"
+              className="md:hidden overflow-hidden bg-white border-t border-gray-100 shadow-xl"
             >
-              <div className="max-w-7xl mx-auto px-4 py-4 space-y-1">
-                {NAV_LINKS.map(({ label, href }) => (
-                  <a
-                    key={label}
-                    href={href}
-                    onClick={() => setMobileOpen(false)}
-                    className="flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium text-slate-700 hover:bg-navy-50 hover:text-navy-900 transition-colors"
-                  >
-                    {label}
-                    <ChevronRight className="h-4 w-4 text-slate-400" />
-                  </a>
-                ))}
-                <div className="pt-3 pb-1 space-y-2 border-t border-gray-100 mt-2">
+              <div className="max-w-7xl mx-auto px-4 py-4">
+
+                {/* ── CTAs first so they're immediately visible ── */}
+                <div className="space-y-2 mb-4">
                   <Button
-                    variant="outline"
-                    className="w-full rounded-full border-navy-200 text-navy-900 font-medium"
+                    className="w-full rounded-xl bg-govgreen-600 hover:bg-govgreen-500 active:bg-govgreen-700 text-white font-bold h-12 text-base shadow-sm transition-all"
                     asChild
                   >
-                    <Link to={ROUTES.login}>Log In</Link>
-                  </Button>
-                  <Button
-                    className="w-full rounded-full bg-navy-900 hover:bg-navy-800 text-white font-semibold shadow-navy"
-                    asChild
-                  >
-                    <Link to={ROUTES.register}>
-                      Start Free — 14 days no card needed
+                    <Link to={ROUTES.register} onClick={() => setMobileOpen(false)}>
+                      Start Free
                       <ArrowRight className="ml-2 h-4 w-4" />
                     </Link>
                   </Button>
+                  <Button
+                    variant="outline"
+                    className="w-full rounded-xl border-navy-200 text-navy-900 font-semibold h-11"
+                    asChild
+                  >
+                    <Link to={ROUTES.login} onClick={() => setMobileOpen(false)}>Log In</Link>
+                  </Button>
                 </div>
+
+                {/* ── Nav links ── */}
+                <div className="border-t border-gray-100 pt-3 space-y-0.5">
+                  {NAV_LINKS.map(({ label, href }) => (
+                    <a
+                      key={label}
+                      href={href}
+                      onClick={() => setMobileOpen(false)}
+                      className="flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-navy-50 hover:text-navy-900 transition-colors"
+                    >
+                      {label}
+                      <ChevronRight className="h-4 w-4 text-slate-400" />
+                    </a>
+                  ))}
+                </div>
+
               </div>
             </motion.div>
           )}
         </AnimatePresence>
       </nav>
+
+      {/* Backdrop — closes menu when tapping outside */}
+      <AnimatePresence>
+        {mobileOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.15 }}
+            className="fixed inset-0 z-40 bg-black/20 md:hidden"
+            onClick={() => setMobileOpen(false)}
+            aria-hidden="true"
+          />
+        )}
+      </AnimatePresence>
 
       <main className="flex-1">
         <Outlet />

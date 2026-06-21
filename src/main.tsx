@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { GoogleOAuthProvider } from "@react-oauth/google"
 import { AuthProvider } from "@/context/AuthContext"
 import App from "./App"
+import { PWAUpdateBanner } from "@/components/PWAUpdateBanner"
 import "./index.css"
 
 const queryClient = new QueryClient({
@@ -26,6 +27,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
         <BrowserRouter>
           <AuthProvider>
             <App />
+            <PWAUpdateBanner />
           </AuthProvider>
         </BrowserRouter>
       </QueryClientProvider>
