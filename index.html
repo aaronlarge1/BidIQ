@@ -42,6 +42,18 @@
   </head>
   <body>
     <div id="root"></div>
+    <!-- SPA routing: restore path stored by 404.html -->
+    <script>
+      (function () {
+        var r = new URLSearchParams(window.location.search).get('r');
+        if (r) {
+          try {
+            var decoded = decodeURIComponent(r);
+            window.history.replaceState(null, '', decoded);
+          } catch (e) {}
+        }
+      })();
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

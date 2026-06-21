@@ -46,7 +46,7 @@ const scaleIn = {
 // ─── Animated counter ─────────────────────────────────────────────────────────
 function AnimatedStat({ value, label }: { value: string; label: string }) {
   const ref = useRef(null)
-  const inView = useInView(ref, { once: true, margin: "-60px" })
+  const inView = useInView(ref, { once: true, amount: 0 })
 
   return (
     <motion.div
@@ -367,14 +367,14 @@ export default function LandingPage() {
             {/* CTAs */}
             <motion.div
               variants={staggerItem}
-              className="flex flex-col sm:flex-row gap-3 justify-center mb-8"
+              className="flex flex-col sm:flex-row gap-3 justify-center mb-4"
             >
               <Link to={ROUTES.register}>
                 <Button
                   size="lg"
-                  className="rounded-full bg-govgreen-600 hover:bg-govgreen-500 text-white font-semibold px-8 h-12 text-base shadow-green transition-all duration-200 hover:scale-[1.02] active:scale-[0.99]"
+                  className="rounded-full bg-govgreen-600 hover:bg-govgreen-500 text-white font-bold px-8 h-12 text-base shadow-green transition-all duration-200 hover:scale-[1.02] active:scale-[0.99] w-full sm:w-auto"
                 >
-                  Start Readiness Check
+                  Start Free
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
               </Link>
@@ -382,10 +382,18 @@ export default function LandingPage() {
                 <Button
                   size="lg"
                   variant="outline"
-                  className="rounded-full border-white/25 text-white hover:bg-white/10 hover:border-white/40 px-8 h-12 text-base backdrop-blur-sm transition-all duration-200"
+                  className="rounded-full border-white/25 text-white hover:bg-white/10 hover:border-white/40 px-8 h-12 text-base backdrop-blur-sm transition-all duration-200 w-full sm:w-auto"
                 >
                   View Live Tender Feed
                 </Button>
+              </Link>
+            </motion.div>
+            <motion.div variants={staggerItem} className="flex justify-center mb-6">
+              <Link
+                to={ROUTES.register}
+                className="text-sm text-govgreen-300 hover:text-govgreen-200 underline underline-offset-2 transition-colors"
+              >
+                Or start with a free Readiness Check →
               </Link>
             </motion.div>
 
@@ -546,7 +554,7 @@ export default function LandingPage() {
             className="text-center mb-14"
             initial="hidden"
             whileInView="visible"
-            viewport={{ once: true, margin: "-80px" }}
+            viewport={{ once: true, amount: 0 }}
             variants={fadeUp}
           >
             <Badge className="bg-red-50 text-red-600 border border-red-100 mb-4 px-3 py-1 rounded-full text-xs font-semibold">
@@ -567,7 +575,7 @@ export default function LandingPage() {
             className="grid md:grid-cols-2 gap-5"
             initial="hidden"
             whileInView="visible"
-            viewport={{ once: true, margin: "-60px" }}
+            viewport={{ once: true, amount: 0 }}
             variants={staggerContainer}
           >
             {PAIN_POINTS.map(({ icon: Icon, title, body }) => (
@@ -600,7 +608,7 @@ export default function LandingPage() {
             className="text-center mb-14"
             initial="hidden"
             whileInView="visible"
-            viewport={{ once: true, margin: "-80px" }}
+            viewport={{ once: true, amount: 0 }}
             variants={fadeUp}
           >
             <Badge className="bg-govgreen-50 text-govgreen-700 border border-govgreen-200 mb-4 px-3 py-1 rounded-full text-xs font-semibold">
@@ -620,7 +628,7 @@ export default function LandingPage() {
             className="grid md:grid-cols-2 lg:grid-cols-3 gap-5"
             initial="hidden"
             whileInView="visible"
-            viewport={{ once: true, margin: "-60px" }}
+            viewport={{ once: true, amount: 0 }}
             variants={staggerContainer}
           >
             {SOLUTION_FEATURES.map(({ icon: Icon, title, body, color, bg, border }) => (
@@ -649,7 +657,7 @@ export default function LandingPage() {
             className="text-center mb-12"
             initial="hidden"
             whileInView="visible"
-            viewport={{ once: true, margin: "-80px" }}
+            viewport={{ once: true, amount: 0 }}
             variants={fadeUp}
           >
             <Badge className="bg-navy-50 text-navy-700 border border-navy-200 mb-4 px-3 py-1 rounded-full text-xs font-semibold">
@@ -669,7 +677,7 @@ export default function LandingPage() {
             className="max-w-3xl mx-auto"
             initial="hidden"
             whileInView="visible"
-            viewport={{ once: true, margin: "-60px" }}
+            viewport={{ once: true, amount: 0 }}
             variants={scaleIn}
           >
             <div className="rounded-2xl overflow-hidden border border-gray-200 shadow-card-hover">
@@ -726,7 +734,7 @@ export default function LandingPage() {
             className="text-center mb-14"
             initial="hidden"
             whileInView="visible"
-            viewport={{ once: true, margin: "-80px" }}
+            viewport={{ once: true, amount: 0 }}
             variants={fadeUp}
           >
             <Badge className="bg-blue-50 text-blue-700 border border-blue-200 mb-4 px-3 py-1 rounded-full text-xs font-semibold">
@@ -742,7 +750,7 @@ export default function LandingPage() {
             className="grid md:grid-cols-2 lg:grid-cols-4 gap-6"
             initial="hidden"
             whileInView="visible"
-            viewport={{ once: true, margin: "-60px" }}
+            viewport={{ once: true, amount: 0 }}
             variants={staggerContainer}
           >
             {HOW_IT_WORKS.map(({ step, icon: Icon, title, body }, i) => (
@@ -771,7 +779,7 @@ export default function LandingPage() {
             className="text-center mt-12"
             initial="hidden"
             whileInView="visible"
-            viewport={{ once: true, margin: "-80px" }}
+            viewport={{ once: true, amount: 0 }}
             variants={fadeUp}
           >
             <Link to={ROUTES.register}>
@@ -797,7 +805,7 @@ export default function LandingPage() {
             className="grid lg:grid-cols-2 gap-16 items-center"
             initial="hidden"
             whileInView="visible"
-            viewport={{ once: true, margin: "-80px" }}
+            viewport={{ once: true, amount: 0 }}
             variants={staggerContainer}
           >
             <motion.div variants={staggerItem}>
@@ -865,7 +873,7 @@ export default function LandingPage() {
             <motion.div
               initial="hidden"
               whileInView="visible"
-              viewport={{ once: true, margin: "-80px" }}
+              viewport={{ once: true, amount: 0 }}
               variants={fadeUp}
             >
               <Badge className="bg-govgreen-600/20 text-govgreen-300 border border-govgreen-500/30 mb-4 px-3 py-1 rounded-full text-xs font-semibold">
@@ -890,7 +898,7 @@ export default function LandingPage() {
             <motion.div
               initial="hidden"
               whileInView="visible"
-              viewport={{ once: true, margin: "-80px" }}
+              viewport={{ once: true, amount: 0 }}
               variants={staggerContainer}
               className="grid grid-cols-2 gap-3"
             >
@@ -913,7 +921,7 @@ export default function LandingPage() {
           <motion.div
             initial="hidden"
             whileInView="visible"
-            viewport={{ once: true, margin: "-80px" }}
+            viewport={{ once: true, amount: 0 }}
             variants={staggerContainer}
           >
             <p className="text-center text-[10px] uppercase tracking-widest text-blue-300/40 mb-8 font-semibold">
@@ -946,7 +954,7 @@ export default function LandingPage() {
             className="text-center mb-14"
             initial="hidden"
             whileInView="visible"
-            viewport={{ once: true, margin: "-80px" }}
+            viewport={{ once: true, amount: 0 }}
             variants={fadeUp}
           >
             <Badge className="bg-navy-100 text-navy-700 border border-navy-200 mb-4 px-3 py-1 rounded-full text-xs font-semibold">
@@ -965,7 +973,7 @@ export default function LandingPage() {
             className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"
             initial="hidden"
             whileInView="visible"
-            viewport={{ once: true, margin: "-60px" }}
+            viewport={{ once: true, amount: 0 }}
             variants={staggerContainer}
           >
             {FEATURES_GRID.map(({ icon: Icon, title, badge }) => (
@@ -1006,7 +1014,7 @@ export default function LandingPage() {
             className="text-center mb-12"
             initial="hidden"
             whileInView="visible"
-            viewport={{ once: true, margin: "-80px" }}
+            viewport={{ once: true, amount: 0 }}
             variants={fadeUp}
           >
             <div className="flex items-center justify-center gap-0.5 mb-3">
@@ -1023,7 +1031,7 @@ export default function LandingPage() {
             className="grid md:grid-cols-3 gap-6"
             initial="hidden"
             whileInView="visible"
-            viewport={{ once: true, margin: "-60px" }}
+            viewport={{ once: true, amount: 0 }}
             variants={staggerContainer}
           >
             {TESTIMONIALS.map(({ quote, name, role, company, stars, avatar }) => (
@@ -1064,7 +1072,7 @@ export default function LandingPage() {
             className="text-center mb-14"
             initial="hidden"
             whileInView="visible"
-            viewport={{ once: true, margin: "-80px" }}
+            viewport={{ once: true, amount: 0 }}
             variants={fadeUp}
           >
             <Badge className="bg-govgreen-50 text-govgreen-700 border border-govgreen-200 mb-4 px-3 py-1 rounded-full text-xs font-semibold">
@@ -1090,7 +1098,7 @@ export default function LandingPage() {
             className="grid md:grid-cols-3 gap-6 items-stretch"
             initial="hidden"
             whileInView="visible"
-            viewport={{ once: true, margin: "-60px" }}
+            viewport={{ once: true, amount: 0 }}
             variants={staggerContainer}
           >
             {PRICING.map((plan) => (
@@ -1162,7 +1170,7 @@ export default function LandingPage() {
             className="text-center mt-10 text-sm text-gray-400"
             initial="hidden"
             whileInView="visible"
-            viewport={{ once: true, margin: "-80px" }}
+            viewport={{ once: true, amount: 0 }}
             variants={fadeUp}
           >
             Need multi-user or enterprise licensing?{" "}
@@ -1182,7 +1190,7 @@ export default function LandingPage() {
             className="text-center mb-12"
             initial="hidden"
             whileInView="visible"
-            viewport={{ once: true, margin: "-80px" }}
+            viewport={{ once: true, amount: 0 }}
             variants={fadeUp}
           >
             <Badge className="bg-blue-50 text-blue-700 border border-blue-200 mb-4 px-3 py-1 rounded-full text-xs font-semibold">
@@ -1196,7 +1204,7 @@ export default function LandingPage() {
           <motion.div
             initial="hidden"
             whileInView="visible"
-            viewport={{ once: true, margin: "-80px" }}
+            viewport={{ once: true, amount: 0 }}
             variants={fadeUp}
           >
             <Accordion type="single" collapsible className="space-y-3">
@@ -1234,7 +1242,7 @@ export default function LandingPage() {
           <motion.div
             initial="hidden"
             whileInView="visible"
-            viewport={{ once: true, margin: "-80px" }}
+            viewport={{ once: true, amount: 0 }}
             variants={staggerContainer}
           >
             <motion.div variants={staggerItem}>
