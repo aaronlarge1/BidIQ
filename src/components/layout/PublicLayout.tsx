@@ -1,77 +1,166 @@
-import { Outlet, Link } from "react-router-dom"
+import { useState, useEffect } from "react"
+import { Outlet, Link, useLocation } from "react-router-dom"
+import { motion, AnimatePresence } from "framer-motion"
+import { Menu, X, ArrowRight, ChevronRight } from "lucide-react"
 import Logo from "@/components/Logo"
 import { Button } from "@/components/ui/button"
 import { ROUTES } from "@/lib/constants"
+import { cn } from "@/lib/utils"
+
+const NAV_LINKS = [
+  { label: "How It Works", href: "#how-it-works" },
+  { label: "Features",     href: "#features" },
+  { label: "Pricing",      href: "#pricing" },
+]
 
 export default function PublicLayout() {
+  const [scrolled, setScrolled] = useState(false)
+  const [mobileOpen, setMobileOpen] = useState(false)
+  const { pathname } = useLocation()
+
+  useEffect(() => {
+    const handler = () => setScrolled(window.scrollY > 20)
+    window.addEventListener("scroll", handler, { passive: true })
+    return () => window.removeEventListener("scroll", handler)
+  }, [])
+
+  // Close mobile menu on route change
+  useEffect(() => { setMobileOpen(false) }, [pathname])
+
   return (
     <div className="min-h-screen flex flex-col">
-      {/* Public Nav */}
-      <nav className="sticky top-0 z-50 border-b bg-white/90 backdrop-blur supports-[backdrop-filter]:bg-white/60">
-        <div className="container flex h-16 items-center justify-between">
-          <Link to={ROUTES.home}>
-            <Logo size="md" />
+
+      {/* ── Nav ─────────────────────────────────────────────────────────── */}
+      <nav className={cn(
+        "sticky top-0 z-50 transition-all duration-300",
+        scrolled
+          ? "bg-white/95 backdrop-blur-md shadow-[0_1px_12px_rgba(0,0,0,0.08)] border-b border-gray-100"
+          : "bg-transparent"
+      )}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 flex h-16 items-center justify-between">
+
+          {/* Logo */}
+          <Link to={ROUTES.home} className="shrink-0">
+            <Logo size="md" variant="full" />
           </Link>
-          <div className="hidden md:flex items-center gap-6 text-sm font-medium text-muted-foreground">
-            <a href="#how-it-works" className="hover:text-navy-900 transition-colors">How It Works</a>
-            <a href="#features" className="hover:text-navy-900 transition-colors">Features</a>
-            <a href="#pricing" className="hover:text-navy-900 transition-colors">Pricing</a>
+
+          {/* Desktop nav links */}
+          <div className="hidden md:flex items-center gap-7 text-sm font-medium text-slate-600">
+            {NAV_LINKS.map(({ label, href }) => (
+              <a
+                key={label}
+                href={href}
+                className="hover:text-navy-900 transition-colors duration-150 relative group"
+              >
+                {label}
+                <span className="absolute -bottom-1 left-0 right-0 h-0.5 bg-govgreen-500 scale-x-0 group-hover:scale-x-100 transition-transform duration-200 origin-left rounded-full" />
+              </a>
+            ))}
           </div>
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" size="sm" asChild>
-              <Link to={ROUTES.dashboard}>Log In</Link>
+
+          {/* Desktop CTAs */}
+          <div className="hidden md:flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              asChild
+              className="text-slate-600 hover:text-navy-900 hover:bg-navy-50 font-medium"
+            >
+              <Link to={ROUTES.login}>Log In</Link>
             </Button>
-            <Button size="sm" asChild className="bg-navy-900 hover:bg-navy-800">
-              <Link to={ROUTES.onboarding}>Start Free</Link>
+            <Button
+              size="sm"
+              asChild
+              className="rounded-full bg-navy-900 hover:bg-navy-800 text-white font-semibold px-5 shadow-navy transition-all duration-150 hover:scale-[1.02]"
+            >
+              <Link to={ROUTES.register}>
+                Start Free
+                <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
+              </Link>
             </Button>
           </div>
+
+          {/* Mobile hamburger */}
+          <button
+            className="md:hidden flex items-center justify-center h-9 w-9 rounded-lg hover:bg-navy-50 transition-colors"
+            onClick={() => setMobileOpen((o) => !o)}
+            aria-label={mobileOpen ? "Close menu" : "Open menu"}
+          >
+            <AnimatePresence mode="wait">
+              {mobileOpen ? (
+                <motion.div
+                  key="x"
+                  initial={{ opacity: 0, rotate: -90 }}
+                  animate={{ opacity: 1, rotate: 0 }}
+                  exit={{ opacity: 0, rotate: 90 }}
+                  transition={{ duration: 0.15 }}
+                >
+                  <X className="h-5 w-5 text-navy-900" />
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="menu"
+                  initial={{ opacity: 0, rotate: 90 }}
+                  animate={{ opacity: 1, rotate: 0 }}
+                  exit={{ opacity: 0, rotate: -90 }}
+                  transition={{ duration: 0.15 }}
+                >
+                  <Menu className="h-5 w-5 text-navy-900" />
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </button>
         </div>
+
+        {/* Mobile menu drawer */}
+        <AnimatePresence>
+          {mobileOpen && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.2, ease: "easeOut" }}
+              className="md:hidden overflow-hidden bg-white border-t border-gray-100 shadow-lg"
+            >
+              <div className="max-w-7xl mx-auto px-4 py-4 space-y-1">
+                {NAV_LINKS.map(({ label, href }) => (
+                  <a
+                    key={label}
+                    href={href}
+                    onClick={() => setMobileOpen(false)}
+                    className="flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium text-slate-700 hover:bg-navy-50 hover:text-navy-900 transition-colors"
+                  >
+                    {label}
+                    <ChevronRight className="h-4 w-4 text-slate-400" />
+                  </a>
+                ))}
+                <div className="pt-3 pb-1 space-y-2 border-t border-gray-100 mt-2">
+                  <Button
+                    variant="outline"
+                    className="w-full rounded-full border-navy-200 text-navy-900 font-medium"
+                    asChild
+                  >
+                    <Link to={ROUTES.login}>Log In</Link>
+                  </Button>
+                  <Button
+                    className="w-full rounded-full bg-navy-900 hover:bg-navy-800 text-white font-semibold shadow-navy"
+                    asChild
+                  >
+                    <Link to={ROUTES.register}>
+                      Start Free — 14 days no card needed
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </Link>
+                  </Button>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </nav>
 
       <main className="flex-1">
         <Outlet />
       </main>
-
-      {/* Footer */}
-      <footer className="border-t bg-navy-950 text-navy-400">
-        <div className="container py-12">
-          <div className="grid md:grid-cols-4 gap-8">
-            <div className="space-y-3">
-              <Logo size="sm" className="[&_span]:text-white [&_.text-muted-foreground]:text-navy-400" />
-              <p className="text-sm">The AI Procurement Operating System for SMEs.</p>
-              <p className="text-xs">© 2026 Civic Ladder Ltd. All rights reserved.</p>
-            </div>
-            <div>
-              <h4 className="text-sm font-semibold text-white mb-3">Product</h4>
-              <ul className="space-y-2 text-sm">
-                <li><a href="#features" className="hover:text-white transition-colors">Features</a></li>
-                <li><a href="#pricing" className="hover:text-white transition-colors">Pricing</a></li>
-                <li><Link to={ROUTES.onboarding} className="hover:text-white transition-colors">Readiness Check</Link></li>
-                <li><Link to={ROUTES.academy} className="hover:text-white transition-colors">Procurement Academy</Link></li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="text-sm font-semibold text-white mb-3">Sectors</h4>
-              <ul className="space-y-2 text-sm">
-                <li>Highways & National Highways</li>
-                <li>Local Authority</li>
-                <li>NHS & Health</li>
-                <li>Housing Associations</li>
-                <li>Education</li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="text-sm font-semibold text-white mb-3">Company</h4>
-              <ul className="space-y-2 text-sm">
-                <li><a href="#" className="hover:text-white transition-colors">About Civic Ladder Ltd</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Privacy Policy</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Terms of Service</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Contact</a></li>
-              </ul>
-            </div>
-          </div>
-        </div>
-      </footer>
     </div>
   )
 }

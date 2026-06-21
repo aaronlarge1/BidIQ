@@ -20,10 +20,10 @@
     --accent-foreground: 0 0% 100%;
     --destructive: 0 84% 60%;
     --destructive-foreground: 210 40% 98%;
-    --border: 214 32% 88%;
-    --input: 214 32% 88%;
+    --border: 214 32% 90%;
+    --input: 214 32% 90%;
     --ring: 217 62% 23%;
-    --radius: 0.5rem;
+    --radius: 0.625rem;
   }
 }
 
@@ -31,29 +31,115 @@
   * {
     @apply border-border;
   }
+
+  html {
+    scroll-behavior: smooth;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
   body {
     @apply bg-background text-foreground antialiased;
-    font-feature-settings: "rlig" 1, "calt" 1;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    font-feature-settings: "rlig" 1, "calt" 1, "cv11" 1;
+    font-optical-sizing: auto;
   }
+
   h1, h2, h3, h4, h5, h6 {
-    @apply tracking-tight;
+    @apply tracking-tight font-bold;
+  }
+
+  /* Improved focus styles */
+  :focus-visible {
+    @apply outline-none ring-2 ring-navy-600 ring-offset-2;
+  }
+
+  /* Better selection */
+  ::selection {
+    @apply bg-govgreen-200 text-govgreen-900;
   }
 }
 
 @layer utilities {
+  /* ── Demo / Status ── */
   .demo-badge {
-    @apply inline-flex items-center gap-1 text-xs font-medium bg-amber-100 text-amber-800 border border-amber-200 rounded px-2 py-0.5;
+    @apply inline-flex items-center gap-1 text-xs font-semibold bg-amber-100 text-amber-800 border border-amber-200 rounded-md px-2 py-0.5;
   }
-  .score-green { @apply text-govgreen-700 bg-govgreen-50 border-govgreen-200; }
-  .score-amber { @apply text-amber-700 bg-amber-50 border-amber-200; }
-  .score-red { @apply text-red-700 bg-red-50 border-red-200; }
+
+  /* ── Score colours ── */
+  .score-green  { @apply text-govgreen-700 bg-govgreen-50 border-govgreen-200; }
+  .score-amber  { @apply text-amber-700 bg-amber-50 border-amber-200; }
+  .score-red    { @apply text-red-700 bg-red-50 border-red-200; }
+
+  /* ── Sidebar nav ── */
   .sidebar-link {
-    @apply flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors;
+    @apply flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150;
   }
   .sidebar-link-active {
-    @apply bg-navy-900 text-white;
+    background-color: rgba(255,255,255,0.12);
+    @apply text-white shadow-sm;
   }
   .sidebar-link-inactive {
-    @apply text-navy-200 hover:bg-navy-800 hover:text-white;
+    @apply text-navy-300 hover:text-white;
+    &:hover { background-color: rgba(255,255,255,0.08); }
+  }
+
+  /* ── Premium card hover ── */
+  .card-hover {
+    @apply transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5;
+  }
+
+  /* ── Gradient text ── */
+  .text-gradient-green {
+    @apply bg-gradient-to-r from-govgreen-500 to-emerald-400 bg-clip-text text-transparent;
+  }
+  .text-gradient-navy {
+    @apply bg-gradient-to-r from-navy-900 to-blue-700 bg-clip-text text-transparent;
+  }
+
+  /* ── Glass morphism ── */
+  .glass {
+    @apply bg-white/10 backdrop-blur-md border border-white/10;
+  }
+  .glass-dark {
+    background-color: rgba(15,31,56,0.8);
+    border-color: rgba(255,255,255,0.08);
+    @apply backdrop-blur-md border;
+  }
+
+  /* ── Skeleton shimmer ── */
+  .skeleton {
+    @apply animate-pulse bg-slate-100 rounded;
+  }
+
+  /* ── Section spacing ── */
+  .section-pad {
+    @apply py-16 lg:py-24;
+  }
+  .section-inner {
+    @apply max-w-6xl mx-auto px-4 sm:px-6;
+  }
+
+  /* ── Scrollbar ── */
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: theme(colors.navy.800) transparent;
+  }
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 4px;
+  }
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    @apply bg-navy-700 rounded-full;
+  }
+
+  /* ── Noise texture overlay (for hero depth) ── */
+  .bg-noise {
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+    background-repeat: repeat;
+    background-size: 200px 200px;
   }
 }

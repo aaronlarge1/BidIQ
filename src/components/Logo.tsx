@@ -2,44 +2,36 @@ import { cn } from "@/lib/utils"
 
 interface LogoProps {
   className?: string
-  size?: "sm" | "md" | "lg"
+  size?: "sm" | "md" | "lg" | "xl"
   variant?: "full" | "icon"
+  white?: boolean
 }
 
-export default function Logo({ className, size = "md", variant = "full" }: LogoProps) {
-  const sizes = { sm: 24, md: 32, lg: 48 }
-  const iconSize = sizes[size]
+// Sizes for the icon portion
+const ICON_SIZES = { sm: 28, md: 36, lg: 48, xl: 64 }
+
+const TEXT_SIZES = {
+  sm: "text-sm",
+  md: "text-base",
+  lg: "text-xl",
+  xl: "text-2xl",
+}
+
+export default function Logo({ className, size = "md", variant = "full", white = false }: LogoProps) {
+  const iconSize = ICON_SIZES[size]
 
   return (
-    <div className={cn("flex items-center gap-2", className)}>
-      <svg
-        width={iconSize}
-        height={iconSize}
-        viewBox="0 0 40 40"
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
-        aria-label="BidIQ Pro logo"
-      >
-        <rect width="40" height="40" rx="8" fill="#1e3055" />
-        {/* Bold B */}
-        <text x="6" y="28" fontFamily="Arial Black, sans-serif" fontSize="24" fontWeight="900" fill="white">B</text>
-        {/* Upward arrow */}
-        <path d="M29 18 L33 13 L37 18" stroke="#22c55e" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
-        <line x1="33" y1="13" x2="33" y2="26" stroke="#22c55e" strokeWidth="2.5" strokeLinecap="round"/>
-        {/* Checkmark */}
-        <path d="M28 30 L31 33 L37 26" stroke="#22c55e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
-      </svg>
+    <div className={cn("flex items-center gap-2.5 shrink-0", className)}>
+      <BrandIcon size={size} white={white} />
       {variant === "full" && (
         <div className="flex flex-col leading-none">
-          <span className={cn("font-black text-navy-900", {
-            "text-sm": size === "sm",
-            "text-base": size === "md",
-            "text-xl": size === "lg",
-          })}>
-            BidIQ<span className="text-govgreen-600"> Pro</span>
+          <span className={cn("font-black tracking-tight", TEXT_SIZES[size], white ? "text-white" : "text-navy-900")}>
+            BidIQ<span className={white ? "text-govgreen-400" : "text-govgreen-600"}> Pro</span>
           </span>
           {size !== "sm" && (
-            <span className="text-[10px] text-muted-foreground tracking-wide">by Civic Ladder Ltd</span>
+            <span className={cn("text-[10px] tracking-wide mt-0.5", white ? "text-white/50" : "text-slate-400")}>
+              by Civic Ladder Ltd
+            </span>
           )}
         </div>
       )}
@@ -47,30 +39,63 @@ export default function Logo({ className, size = "md", variant = "full" }: LogoP
   )
 }
 
-export function LogoWhite({ className, size = "md" }: Omit<LogoProps, "variant">) {
-  const sizes = { sm: 24, md: 32, lg: 48 }
-  const iconSize = sizes[size]
+// ─── BrandIcon ─────────────────────────────────────────────────────────────────
+// Uses the approved PNG icon if available, falls back to inline SVG
+export function BrandIcon({ size = "md", white = false, className }: { size?: "sm" | "md" | "lg" | "xl"; white?: boolean; className?: string }) {
+  const px = ICON_SIZES[size]
   return (
-    <div className={cn("flex items-center gap-2", className)}>
-      <svg width={iconSize} height={iconSize} viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <rect width="40" height="40" rx="8" fill="rgba(255,255,255,0.15)" />
-        <text x="6" y="28" fontFamily="Arial Black, sans-serif" fontSize="24" fontWeight="900" fill="white">B</text>
-        <path d="M29 18 L33 13 L37 18" stroke="#4ade80" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
-        <line x1="33" y1="13" x2="33" y2="26" stroke="#4ade80" strokeWidth="2.5" strokeLinecap="round"/>
-        <path d="M28 30 L31 33 L37 26" stroke="#4ade80" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
-      </svg>
-      <div className="flex flex-col leading-none">
-        <span className={cn("font-black text-white", {
-          "text-sm": size === "sm",
-          "text-base": size === "md",
-          "text-xl": size === "lg",
-        })}>
-          BidIQ<span className="text-govgreen-400"> Pro</span>
-        </span>
-        {size !== "sm" && (
-          <span className="text-[10px] text-white/60 tracking-wide">by Civic Ladder Ltd</span>
-        )}
-      </div>
+    <img
+      src="/brand/bidiq-pro-icon.png"
+      alt="BidIQ Pro"
+      width={px}
+      height={px}
+      className={cn("object-contain shrink-0", className)}
+      style={{ width: px, height: px }}
+      onError={(e) => {
+        // Fall back to inline SVG if PNG not found
+        const target = e.currentTarget
+        target.style.display = "none"
+        const svg = target.nextElementSibling as SVGElement
+        if (svg) svg.style.display = "block"
+      }}
+    />
+  )
+}
+
+// ─── BrandLogo ─────────────────────────────────────────────────────────────────
+// Full horizontal logo using PNG, falls back to text+icon combo
+export function BrandLogo({
+  className,
+  size = "md",
+  white = false,
+}: {
+  className?: string
+  size?: "sm" | "md" | "lg" | "xl"
+  white?: boolean
+}) {
+  return (
+    <div className={cn("flex items-center", className)}>
+      <img
+        src="/brand/bidiq-pro-logo.png"
+        alt="BidIQ Pro"
+        className="object-contain"
+        style={{ height: ICON_SIZES[size], maxWidth: ICON_SIZES[size] * 4 }}
+        onError={(e) => {
+          // Fall back to Logo component behaviour
+          const target = e.currentTarget
+          target.style.display = "none"
+          const fallback = target.nextElementSibling as HTMLElement
+          if (fallback) fallback.style.display = "flex"
+        }}
+      />
+      {/* Fallback hidden by default */}
+      <Logo size={size} variant="full" white={white} className="hidden" />
     </div>
   )
+}
+
+// ─── LogoWhite ─────────────────────────────────────────────────────────────────
+// Convenience wrapper for white variant (used in dark sidebars/footers)
+export function LogoWhite({ className, size = "md" }: { className?: string; size?: "sm" | "md" | "lg" | "xl" }) {
+  return <Logo className={className} size={size} variant="full" white />
 }

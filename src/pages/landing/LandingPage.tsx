@@ -1,95 +1,106 @@
-import { motion } from "framer-motion"
+import { useEffect, useRef, useState } from "react"
+import { motion, useInView } from "framer-motion"
 import { Link } from "react-router-dom"
 import {
-  ArrowRight,
-  CheckCircle2,
-  Shield,
-  Zap,
-  TrendingUp,
-  FileText,
-  Search,
-  Award,
-  ChevronDown,
-  Star,
-  Building2,
-  Construction,
-  Truck,
-  Heart,
-  GraduationCap,
-  Wifi,
-  Users,
+  ArrowRight, CheckCircle2, Shield, Zap, TrendingUp, FileText, Search,
+  Award, ChevronDown, Star, Building2, Construction, Truck, Heart,
+  GraduationCap, Wifi, Users, X, Menu, Bot, Target, PoundSterling,
+  Clock, BarChart3, FileCheck, Layers, BookOpen, Globe, ChevronRight,
+  Sparkles, Lock, RefreshCw,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
 import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
+  Accordion, AccordionContent, AccordionItem, AccordionTrigger,
 } from "@/components/ui/accordion"
 import { Separator } from "@/components/ui/separator"
 import { PRICING, ROUTES } from "@/lib/constants"
+import DashboardMockup from "@/components/DashboardMockup"
+import Logo from "@/components/Logo"
 
-// ─── Animation variants ────────────────────────────────────────────────────
+// ─── Animation variants ────────────────────────────────────────────────────────
 const fadeUp = {
-  hidden: { opacity: 0, y: 24 },
+  hidden: { opacity: 0, y: 28 },
   visible: (delay = 0) => ({
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.55, ease: "easeOut", delay },
+    opacity: 1, y: 0,
+    transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1], delay },
   }),
 }
 
 const staggerContainer = {
   hidden: {},
-  visible: { transition: { staggerChildren: 0.1 } },
+  visible: { transition: { staggerChildren: 0.09 } },
 }
 
 const staggerItem = {
-  hidden: { opacity: 0, y: 20 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: "easeOut" } },
+  hidden: { opacity: 0, y: 22 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.55, ease: [0.22, 1, 0.36, 1] } },
 }
 
-// ─── Data ──────────────────────────────────────────────────────────────────
-const JOURNEY_STEPS = [
-  "Find",
-  "Qualify",
-  "Prepare",
-  "Bid",
-  "Win",
-  "Deliver",
-  "Renew",
-  "Scale",
+const scaleIn = {
+  hidden: { opacity: 0, scale: 0.94 },
+  visible: { opacity: 1, scale: 1, transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] } },
+}
+
+// ─── Animated counter ─────────────────────────────────────────────────────────
+function AnimatedStat({ value, label }: { value: string; label: string }) {
+  const ref = useRef(null)
+  const inView = useInView(ref, { once: true, margin: "-60px" })
+
+  return (
+    <motion.div
+      ref={ref}
+      className="text-center"
+      initial={{ opacity: 0, y: 16 }}
+      animate={inView ? { opacity: 1, y: 0 } : {}}
+      transition={{ duration: 0.55, ease: "easeOut" }}
+    >
+      <div className="text-3xl lg:text-4xl font-black text-white mb-1 tracking-tight">{value}</div>
+      <div className="text-sm text-blue-300/60 font-medium">{label}</div>
+    </motion.div>
+  )
+}
+
+// ─── Data ─────────────────────────────────────────────────────────────────────
+const STATS = [
+  { value: "£300bn+", label: "UK public procurement market" },
+  { value: "£2.3bn+", label: "in matched opportunities" },
+  { value: "34%",     label: "average win rate uplift" },
+  { value: "500+",    label: "SMEs growing with BidIQ Pro" },
 ]
 
-const STATS = [
-  { value: "£2.3bn+", label: "in matched opportunities" },
-  { value: "72%", label: "average readiness improvement" },
-  { value: "34%", label: "win rate uplift" },
-  { value: "500+", label: "SMEs using BidIQ Pro" },
+const JOURNEY_STEPS = [
+  { label: "Find", desc: "Live tender alerts" },
+  { label: "Qualify", desc: "AI fit scoring" },
+  { label: "Prepare", desc: "Compliance check" },
+  { label: "Bid", desc: "AI workspace" },
+  { label: "Win", desc: "Submit & track" },
+  { label: "Deliver", desc: "KPI tracking" },
+  { label: "Renew", desc: "Contract renewal" },
+  { label: "Scale", desc: "Grow pipeline" },
 ]
 
 const PAIN_POINTS = [
   {
     icon: Search,
     title: "You don't know which contracts you're eligible for",
-    body: "Thousands of notices are published every week across Find a Tender, Contracts Finder and buyer portals. Without intelligent filtering, the right ones slip past you every time.",
+    body: "Thousands of notices are published every week across Find a Tender, Contracts Finder and buyer portals. Without intelligent filtering, the right ones slip past every time.",
   },
   {
     icon: FileText,
-    title: "Bid documents are complex and time-consuming",
-    body: "Writing compliant, compelling answers to method statements, social value questions and pricing schedules can take weeks — time most SME teams simply don't have.",
+    title: "Bid documents take weeks of time your team doesn't have",
+    body: "Writing compliant, compelling answers to method statements, social value questions and pricing schedules can take weeks — time most SME teams simply can't spare.",
   },
   {
     icon: Shield,
-    title: "You're missing compliance documents at the wrong moment",
-    body: "Expired insurance certificates, lapsed ISO accreditations or missing policies disqualify you from bids you could easily win. Most SMEs only find out after submission.",
+    title: "Missing compliance documents disqualify you at the wrong moment",
+    body: "Expired insurance certificates, lapsed ISO accreditations or missing policies disqualify bids you could easily win. Most SMEs only discover this after submission.",
   },
   {
     icon: TrendingUp,
-    title: "You have no visibility on deadlines, renewals or pipeline",
-    body: "Without a structured bid pipeline, contracts renew or expire without your knowledge and opportunities are lost to better-organised competitors.",
+    title: "No visibility on deadlines, renewals or what's in your pipeline",
+    body: "Without a structured bid pipeline, contracts renew without warning and opportunities are lost to better-organised competitors with bigger bid teams.",
   },
 ]
 
@@ -97,76 +108,91 @@ const SOLUTION_FEATURES = [
   {
     icon: Search,
     title: "AI Tender Discovery",
-    body: "Matches live public sector opportunities to your capabilities, sectors and geography — before your competitors even know they exist.",
+    body: "Match live public-sector opportunities to your capabilities, sectors and geography — daily alerts from Contracts Finder, Find a Tender, NHS Supply Chain and 200+ buyer portals.",
     color: "text-govgreen-600",
     bg: "bg-govgreen-50",
+    border: "border-govgreen-100",
   },
   {
-    icon: CheckCircle2,
-    title: "Readiness Assessment",
-    body: "A 5-minute diagnostic that identifies every compliance gap, missing document and capability shortfall blocking your next win.",
+    icon: Target,
+    title: "Procurement Readiness Score",
+    body: "A 5-minute diagnostic that surfaces every compliance gap, missing document and capability shortfall blocking your next win — with a prioritised action plan.",
     color: "text-blue-600",
     bg: "bg-blue-50",
+    border: "border-blue-100",
   },
   {
-    icon: FileText,
+    icon: Bot,
     title: "AI Bid Workspace",
-    body: "Upload the tender pack. The AI extracts questions, suggests scoring criteria and drafts high-quality answers you refine and submit.",
+    body: "Upload the tender pack. AI extracts questions, maps scoring criteria and drafts high-quality answers you refine. Human expertise stays central — AI handles the scaffolding.",
     color: "text-indigo-600",
     bg: "bg-indigo-50",
+    border: "border-indigo-100",
   },
   {
-    icon: Shield,
+    icon: Lock,
     title: "Compliance Vault",
-    body: "Store, track and auto-remind every certificate, policy and accreditation with expiry alerts 90, 30 and 7 days in advance.",
+    body: "Store, track and auto-remind every certificate, policy and accreditation with expiry alerts 90, 30 and 7 days in advance. Never fail a compliance check again.",
     color: "text-amber-600",
     bg: "bg-amber-50",
+    border: "border-amber-100",
   },
   {
-    icon: TrendingUp,
-    title: "Pipeline CRM",
-    body: "Kanban-style bid management across every stage — from spotted opportunity to post-award debrief — with team task assignments and deadline calendars.",
+    icon: Layers,
+    title: "Bid Pipeline CRM",
+    body: "Kanban-style pipeline management across every stage — from spotted opportunity to post-award debrief — with deadline calendars and task assignments.",
     color: "text-purple-600",
     bg: "bg-purple-50",
+    border: "border-purple-100",
   },
   {
     icon: Award,
     title: "Contract Delivery Hub",
-    body: "Structured KPI tracking, evidence capture and renewal preparation that turns good delivery into the next winning bid.",
+    body: "Structured KPI tracking, evidence capture and renewal preparation that turns good delivery into the next winning bid and builds a compounding advantage.",
     color: "text-rose-600",
     bg: "bg-rose-50",
+    border: "border-rose-100",
   },
 ]
 
 const HOW_IT_WORKS = [
   {
     step: "01",
-    icon: CheckCircle2,
+    icon: Target,
     title: "Complete your Readiness Check",
-    body: "Answer 20 questions in 5 minutes. BidIQ Pro produces a scored readiness report and a prioritised action plan.",
-    cta: null,
+    body: "Answer 20 questions in 5 minutes. BidIQ Pro produces a scored readiness report and a prioritised action plan your team can act on immediately.",
   },
   {
     step: "02",
     icon: Search,
-    title: "Discover matched opportunities",
-    body: "Receive daily matched tender alerts from Find a Tender, Contracts Finder, NHS Supply Chain and 200+ buyer portals — filtered to contracts you can actually win.",
-    cta: null,
+    title: "Receive matched tender alerts",
+    body: "Daily alerts matched to your sectors, geography and capabilities — from Find a Tender, Contracts Finder, NHS Supply Chain and 200+ buyer portals.",
   },
   {
     step: "03",
-    icon: FileText,
-    title: "Write and submit winning bids with AI",
-    body: "Upload the tender pack, answer guided questions and let the AI draft compliant, high-scoring responses. Human review stays central — AI does the heavy lifting.",
-    cta: null,
+    icon: Bot,
+    title: "Write stronger bids with AI",
+    body: "Upload the tender pack, answer guided questions and let AI draft compliant, high-scoring responses. Review, refine and submit. The heavy lifting is done.",
   },
   {
     step: "04",
-    icon: Award,
-    title: "Deliver contracts and win renewals",
-    body: "Track KPIs, capture evidence, build your reference library and get ahead of contract renewals — creating a compounding competitive advantage over time.",
-    cta: null,
+    icon: RefreshCw,
+    title: "Deliver, evidence and renew",
+    body: "Track KPIs, capture evidence, build your reference library and stay ahead of renewals — creating compounding competitive advantage with every contract.",
   },
+]
+
+const COMPARISON = [
+  { feature: "Live tender alerts",           old: true,  bidiq: true  },
+  { feature: "AI opportunity fit scoring",   old: false, bidiq: true  },
+  { feature: "Compliance gap detection",     old: false, bidiq: true  },
+  { feature: "AI bid drafting",              old: false, bidiq: true  },
+  { feature: "Readiness score & action plan",old: false, bidiq: true  },
+  { feature: "Compliance vault & alerts",    old: false, bidiq: true  },
+  { feature: "Bid pipeline CRM",             old: false, bidiq: true  },
+  { feature: "Contract delivery tracking",   old: false, bidiq: true  },
+  { feature: "Evidence collection",          old: false, bidiq: true  },
+  { feature: "Win/loss learning",            old: false, bidiq: true  },
 ]
 
 const HIGHWAYS_CATEGORIES = [
@@ -176,48 +202,75 @@ const HIGHWAYS_CATEGORIES = [
   "Winter maintenance & gritting",
   "Bridge works & structures",
   "Electrical & street lighting",
-  "Traffic management",
+  "Traffic management & TM",
   "StreetWorks & utilities coordination",
 ]
 
 const SECTOR_ICONS = [
   { icon: Construction, label: "Highways & Infra" },
-  { icon: Heart, label: "NHS & Health" },
-  { icon: Building2, label: "Local Authority" },
-  { icon: GraduationCap, label: "Education" },
-  { icon: Truck, label: "Logistics & FM" },
-  { icon: Wifi, label: "Digital & IT" },
-  { icon: Users, label: "Social Care" },
-  { icon: Zap, label: "Energy & Utilities" },
+  { icon: Heart,        label: "NHS & Health" },
+  { icon: Building2,    label: "Local Authority" },
+  { icon: GraduationCap,label: "Education" },
+  { icon: Truck,        label: "Logistics & FM" },
+  { icon: Wifi,         label: "Digital & IT" },
+  { icon: Users,        label: "Social Care" },
+  { icon: Zap,          label: "Energy & Utilities" },
 ]
 
 const FEATURES_GRID = [
-  { icon: Search, title: "Tender Discovery", badge: null },
-  { icon: CheckCircle2, title: "Readiness Centre", badge: "New" },
-  { icon: FileText, title: "AI Bid Workspace", badge: null },
-  { icon: Shield, title: "Compliance Vault", badge: null },
-  { icon: TrendingUp, title: "Bid Pipeline CRM", badge: null },
-  { icon: Award, title: "Contract Delivery", badge: null },
-  { icon: Building2, title: "Buyer Intelligence", badge: "Pro" },
-  { icon: Users, title: "Consortium Builder", badge: "Pro" },
-  { icon: Star, title: "Social Value Generator", badge: "Pro" },
-  { icon: Zap, title: "Market Intelligence", badge: "Pro" },
-  { icon: GraduationCap, title: "Procurement Academy", badge: "Pro" },
-  { icon: TrendingUp, title: "Finance & Pricing Tools", badge: "Growth" },
+  { icon: Search,       title: "Tender Discovery",           badge: null },
+  { icon: Target,       title: "Readiness Centre",           badge: "New" },
+  { icon: Bot,          title: "AI Bid Workspace",           badge: null },
+  { icon: Lock,         title: "Compliance Vault",           badge: null },
+  { icon: Layers,       title: "Bid Pipeline CRM",           badge: null },
+  { icon: Award,        title: "Contract Delivery",          badge: null },
+  { icon: Building2,    title: "Buyer Intelligence",         badge: "Pro" },
+  { icon: Users,        title: "Consortium Builder",         badge: "Pro" },
+  { icon: Globe,        title: "Social Value Generator",     badge: "Pro" },
+  { icon: BarChart3,    title: "Market Intelligence",        badge: "Pro" },
+  { icon: BookOpen,     title: "Procurement Academy",        badge: "Pro" },
+  { icon: PoundSterling,title: "Finance & Pricing Tools",    badge: "Growth" },
+]
+
+const TESTIMONIALS = [
+  {
+    quote: "BidIQ Pro found us a National Highways maintenance contract we'd have completely missed. We won it on our first attempt.",
+    name: "James T.",
+    role: "Director",
+    company: "Highways maintenance contractor",
+    stars: 5,
+    avatar: "JT",
+  },
+  {
+    quote: "The Compliance Vault alone is worth the subscription. No more panicking about expired insurances the night before a deadline.",
+    name: "Priya S.",
+    role: "Operations Manager",
+    company: "Facilities management company",
+    stars: 5,
+    avatar: "PS",
+  },
+  {
+    quote: "We went from a 12% win rate to over 40% in eight months. The AI bid workspace has transformed how we respond to tenders.",
+    name: "Mark W.",
+    role: "Managing Director",
+    company: "Construction SME",
+    stars: 5,
+    avatar: "MW",
+  },
 ]
 
 const FAQS = [
   {
-    q: "Is BidIQ Pro suitable for my size of business?",
-    a: "BidIQ Pro is designed for companies with 5 to 200 employees that are bidding for contracts valued between £50,000 and £5 million. Whether you're submitting your first public sector tender or managing 20 bids a year, the platform scales with you.",
+    q: "Is BidIQ Pro right for the size of my business?",
+    a: "BidIQ Pro is built for companies with 5 to 200 employees bidding on contracts valued between £50,000 and £5 million. Whether you're submitting your first public sector tender or managing 20 bids a year, the platform scales with you.",
   },
   {
     q: "Do I need procurement experience to use BidIQ Pro?",
-    a: "No prior procurement expertise is needed. BidIQ Pro guides you through every step — from understanding the regulations to writing compliant bid answers. The Procurement Academy module also provides structured learning to build your team's capability over time.",
+    a: "No prior expertise is needed. BidIQ Pro guides you through every step — from understanding the regulations to writing compliant bid answers. The Procurement Academy module provides structured learning to build your team's capability over time.",
   },
   {
     q: "What types of contracts can I find through BidIQ Pro?",
-    a: "BidIQ Pro monitors opportunities across central government, local authorities, NHS trusts and integrated care boards, housing associations, educational institutions, and highways and infrastructure frameworks including National Highways, regional authority DPS and framework agreements.",
+    a: "BidIQ Pro monitors opportunities across central government, local authorities, NHS trusts, housing associations, educational institutions, and highways and infrastructure frameworks including National Highways, regional DPS and framework agreements.",
   },
   {
     q: "How does the AI bid writing work?",
@@ -225,7 +278,7 @@ const FAQS = [
   },
   {
     q: "Can I try BidIQ Pro before committing to a subscription?",
-    a: "Yes. Every plan starts with a 14-day free trial. No credit card is required to begin and there is no setup fee. You can complete the Readiness Check and explore matched tender alerts from day one.",
+    a: "Yes. Every plan starts with a 14-day free trial. No credit card is required and there is no setup fee. You can complete the Readiness Check and explore matched tender alerts from day one.",
   },
   {
     q: "Is my company data secure?",
@@ -233,190 +286,262 @@ const FAQS = [
   },
 ]
 
-// ─── Component ─────────────────────────────────────────────────────────────
+// ─── Component ─────────────────────────────────────────────────────────────────
 export default function LandingPage() {
   return (
-    <div className="min-h-screen bg-white font-sans antialiased">
+    <div className="min-h-screen bg-white font-sans antialiased overflow-x-hidden">
 
-      {/* ── HERO ───────────────────────────────────────────────────────── */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-navy-950 via-navy-900 to-blue-900 text-white">
-        {/* Animated gradient orbs */}
+      {/* ╔═══════════════════════════════════════════════════════════════════╗
+          ║  HERO                                                             ║
+          ╚═══════════════════════════════════════════════════════════════════╝ */}
+      <section className="relative overflow-hidden bg-noise" style={{ background: "linear-gradient(150deg, #0a1628 0%, #0f1f38 35%, #1a2e52 65%, #1a3a6b 100%)" }}>
+
+        {/* Ambient glow orbs */}
         <div className="pointer-events-none absolute inset-0 overflow-hidden">
           <motion.div
-            className="absolute -top-40 -left-40 h-[600px] w-[600px] rounded-full bg-govgreen-600/10 blur-3xl"
-            animate={{ scale: [1, 1.15, 1], opacity: [0.4, 0.6, 0.4] }}
-            transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+            className="absolute -top-40 -left-40 h-[700px] w-[700px] rounded-full bg-govgreen-600/8 blur-3xl"
+            animate={{ scale: [1, 1.12, 1], opacity: [0.5, 0.7, 0.5] }}
+            transition={{ duration: 9, repeat: Infinity, ease: "easeInOut" }}
           />
           <motion.div
-            className="absolute -bottom-40 -right-40 h-[500px] w-[500px] rounded-full bg-blue-500/10 blur-3xl"
-            animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.5, 0.3] }}
-            transition={{ duration: 10, repeat: Infinity, ease: "easeInOut", delay: 2 }}
+            className="absolute top-20 right-0 h-[500px] w-[500px] rounded-full bg-blue-600/8 blur-3xl"
+            animate={{ scale: [1, 1.18, 1], opacity: [0.3, 0.5, 0.3] }}
+            transition={{ duration: 11, repeat: Infinity, ease: "easeInOut", delay: 2.5 }}
           />
+          <motion.div
+            className="absolute bottom-0 left-1/3 h-[400px] w-[400px] rounded-full bg-govgreen-600/6 blur-3xl"
+            animate={{ scale: [1, 1.15, 1], opacity: [0.2, 0.4, 0.2] }}
+            transition={{ duration: 8, repeat: Infinity, ease: "easeInOut", delay: 5 }}
+          />
+          {/* Grid overlay */}
+          <div className="absolute inset-0 opacity-[0.025]" style={{
+            backgroundImage: `linear-gradient(rgba(255,255,255,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.5) 1px, transparent 1px)`,
+            backgroundSize: "72px 72px"
+          }} />
         </div>
 
-        <div className="relative max-w-6xl mx-auto px-4 py-20 lg:py-32">
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 pt-20 pb-8 lg:pt-28">
+
+          {/* Headline block */}
           <motion.div
-            className="text-center max-w-4xl mx-auto"
+            className="text-center max-w-4xl mx-auto mb-14"
             initial="hidden"
             animate="visible"
             variants={staggerContainer}
           >
-            {/* Pre-headline badge */}
-            <motion.div variants={staggerItem} className="mb-6">
-              <Badge className="bg-govgreen-600/20 text-govgreen-300 border border-govgreen-500/30 px-4 py-1.5 text-sm font-medium rounded-full">
+            {/* Eyebrow pill */}
+            <motion.div variants={staggerItem} className="mb-5 flex justify-center">
+              <div className="inline-flex items-center gap-2 rounded-full border border-govgreen-500/30 bg-govgreen-600/15 px-4 py-1.5 text-sm font-medium text-govgreen-300 backdrop-blur-sm">
+                <Sparkles className="h-3.5 w-3.5" />
                 The AI Procurement Operating System for SMEs
-              </Badge>
+              </div>
             </motion.div>
 
-            {/* Headline */}
+            {/* Main headline */}
             <motion.h1
               variants={staggerItem}
-              className="text-4xl sm:text-5xl lg:text-6xl font-bold leading-tight tracking-tight mb-6"
+              className="text-4xl sm:text-5xl lg:text-[3.75rem] font-black leading-[1.1] tracking-tight text-white mb-6"
             >
-              Win bigger government contracts{" "}
-              <span className="text-govgreen-400">without needing a full bid team.</span>
+              Win bigger public-sector contracts{" "}
+              <span className="relative inline-block">
+                <span className="text-govgreen-400">without a full bid team.</span>
+                <motion.div
+                  className="absolute -bottom-1 left-0 right-0 h-px bg-gradient-to-r from-transparent via-govgreen-400/60 to-transparent"
+                  initial={{ scaleX: 0 }}
+                  animate={{ scaleX: 1 }}
+                  transition={{ duration: 0.8, delay: 0.8, ease: "easeOut" }}
+                />
+              </span>
             </motion.h1>
 
             {/* Subheadline */}
             <motion.p
               variants={staggerItem}
-              className="text-lg lg:text-xl text-blue-100/80 leading-relaxed mb-8 max-w-3xl mx-auto"
+              className="text-lg lg:text-xl text-blue-100/70 leading-relaxed mb-8 max-w-3xl mx-auto"
             >
-              BidIQ Pro helps SMEs discover, qualify for, write, manage and win
-              public-sector contracts using AI — putting enterprise-grade procurement
-              capability in the hands of every growing business.
+              BidIQ Pro helps SMEs discover live government tenders, check eligibility,
+              prepare compliance, write stronger bids with AI, and manage contracts from
+              opportunity to renewal — in one integrated platform.
             </motion.p>
 
             {/* CTAs */}
             <motion.div
               variants={staggerItem}
-              className="flex flex-col sm:flex-row gap-4 justify-center mb-10"
+              className="flex flex-col sm:flex-row gap-3 justify-center mb-8"
             >
               <Link to={ROUTES.register}>
                 <Button
                   size="lg"
-                  className="rounded-full bg-govgreen-600 hover:bg-govgreen-500 text-white font-semibold px-8 py-6 text-base shadow-lg shadow-govgreen-900/30 transition-all duration-200"
+                  className="rounded-full bg-govgreen-600 hover:bg-govgreen-500 text-white font-semibold px-8 h-12 text-base shadow-green transition-all duration-200 hover:scale-[1.02] active:scale-[0.99]"
                 >
                   Start Readiness Check
-                  <ArrowRight className="ml-2 h-5 w-5" />
+                  <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
               </Link>
-              <Button
-                size="lg"
-                variant="outline"
-                className="rounded-full border-white/30 text-white hover:bg-white/10 hover:border-white/50 px-8 py-6 text-base backdrop-blur-sm"
-              >
-                Book Demo
-              </Button>
-            </motion.div>
-
-            {/* Social proof text */}
-            <motion.p
-              variants={staggerItem}
-              className="text-blue-200/60 text-sm mb-8"
-            >
-              Trusted by 500+ SMEs across highways, NHS, local authority and education
-            </motion.p>
-
-            {/* Trust badges */}
-            <motion.div
-              variants={staggerItem}
-              className="flex flex-col sm:flex-row gap-3 justify-center flex-wrap mb-14"
-            >
-              {[
-                { icon: Award, label: "National Highways Approved Categories" },
-                { icon: Heart, label: "NHS Supply Chain Ready" },
-                { icon: Shield, label: "Crown Commercial Service Aligned" },
-              ].map(({ icon: Icon, label }) => (
-                <div
-                  key={label}
-                  className="flex items-center gap-2 bg-white/8 border border-white/15 rounded-full px-4 py-2 text-sm text-blue-100/80 backdrop-blur-sm"
+              <Link to={ROUTES.tenders}>
+                <Button
+                  size="lg"
+                  variant="outline"
+                  className="rounded-full border-white/25 text-white hover:bg-white/10 hover:border-white/40 px-8 h-12 text-base backdrop-blur-sm transition-all duration-200"
                 >
-                  <Icon className="h-4 w-4 text-govgreen-400 flex-shrink-0" />
-                  {label}
-                </div>
-              ))}
+                  View Live Tender Feed
+                </Button>
+              </Link>
             </motion.div>
 
-            {/* Journey steps */}
-            <motion.div variants={staggerItem}>
-              <p className="text-xs uppercase tracking-widest text-blue-300/50 mb-4 font-medium">
-                Your procurement journey
-              </p>
-              <div className="flex flex-wrap justify-center gap-0">
-                {JOURNEY_STEPS.map((step, i) => (
-                  <div key={step} className="flex items-center">
-                    <div className="flex flex-col items-center">
-                      <div
-                        className={`h-2 w-2 rounded-full mb-1 ${
-                          i === 0
-                            ? "bg-govgreen-400 scale-125"
-                            : i === 4
-                            ? "bg-govgreen-400"
-                            : "bg-blue-400/40"
-                        }`}
-                      />
-                      <span
-                        className={`text-xs font-medium ${
-                          i === 0 || i === 4
-                            ? "text-govgreen-300"
-                            : "text-blue-200/50"
-                        }`}
-                      >
-                        {step}
-                      </span>
+            {/* Social proof */}
+            <motion.div variants={staggerItem} className="flex flex-col items-center gap-4">
+              <div className="flex items-center gap-2">
+                <div className="flex -space-x-2">
+                  {["JT", "PS", "MW", "AR", "SB"].map((init, i) => (
+                    <div
+                      key={init}
+                      className="h-8 w-8 rounded-full bg-navy-700 border-2 border-navy-900 flex items-center justify-center text-[10px] font-bold text-white"
+                      style={{ zIndex: 5 - i }}
+                    >
+                      {init}
                     </div>
-                    {i < JOURNEY_STEPS.length - 1 && (
-                      <div className="h-px w-8 bg-blue-400/20 mx-1 mb-1" />
-                    )}
-                  </div>
+                  ))}
+                </div>
+                <p className="text-sm text-blue-200/60">
+                  Trusted by <span className="text-white font-semibold">500+</span> SMEs across highways, NHS & local authority
+                </p>
+              </div>
+
+              <div className="flex items-center gap-0.5">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <Star key={i} className="h-4 w-4 fill-amber-400 text-amber-400" />
                 ))}
+                <span className="text-sm text-blue-200/60 ml-2">4.9/5 across 200+ reviews</span>
               </div>
             </motion.div>
+          </motion.div>
+
+          {/* Trust badges */}
+          <motion.div
+            className="flex flex-wrap justify-center gap-3 mb-12"
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.6 }}
+          >
+            {[
+              { icon: Award,     label: "National Highways SME Gateway" },
+              { icon: Heart,     label: "NHS Supply Chain Ready" },
+              { icon: Shield,    label: "Crown Commercial Service Aligned" },
+              { icon: FileCheck, label: "Find a Tender & Contracts Finder" },
+            ].map(({ icon: Icon, label }) => (
+              <div
+                key={label}
+                className="flex items-center gap-2 rounded-full border border-white/12 bg-white/6 px-4 py-2 text-sm text-blue-100/70 backdrop-blur-sm"
+              >
+                <Icon className="h-3.5 w-3.5 text-govgreen-400 shrink-0" />
+                {label}
+              </div>
+            ))}
+          </motion.div>
+
+          {/* Dashboard mockup */}
+          <motion.div
+            initial={{ opacity: 0, y: 48, scale: 0.97 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{ duration: 0.9, delay: 0.35, ease: [0.22, 1, 0.36, 1] }}
+            className="px-0 lg:px-8"
+          >
+            <DashboardMockup />
+          </motion.div>
+
+          {/* Journey steps */}
+          <motion.div
+            className="mt-10 pb-6"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.6, delay: 0.9 }}
+          >
+            <p className="text-center text-[10px] uppercase tracking-widest text-blue-300/40 mb-5 font-semibold">
+              The complete procurement journey
+            </p>
+            <div className="flex flex-wrap justify-center gap-0 max-w-3xl mx-auto">
+              {JOURNEY_STEPS.map((step, i) => (
+                <div key={step.label} className="flex items-center">
+                  <div className="flex flex-col items-center px-1">
+                    <div className={`h-1.5 w-1.5 rounded-full mb-1.5 ${
+                      i === 0 ? "bg-govgreen-400 scale-150" :
+                      i === 4 ? "bg-govgreen-400" :
+                      "bg-blue-400/30"
+                    }`} />
+                    <span className={`text-[11px] font-semibold ${
+                      i === 0 || i === 4 ? "text-govgreen-300" : "text-blue-200/35"
+                    }`}>
+                      {step.label}
+                    </span>
+                  </div>
+                  {i < JOURNEY_STEPS.length - 1 && (
+                    <div className="h-px w-5 sm:w-8 bg-white/10 mx-0.5 mb-1" />
+                  )}
+                </div>
+              ))}
+            </div>
           </motion.div>
         </div>
 
         {/* Scroll cue */}
-        <div className="relative flex justify-center pb-8">
+        <div className="flex justify-center pb-6">
           <motion.div
-            animate={{ y: [0, 8, 0] }}
-            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-            className="text-blue-300/40"
+            animate={{ y: [0, 7, 0] }}
+            transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }}
+            className="text-blue-300/30"
           >
             <ChevronDown className="h-6 w-6" />
           </motion.div>
         </div>
       </section>
 
-      {/* ── STATS BAR ──────────────────────────────────────────────────── */}
+      {/* ╔═══════════════════════════════════════════════════════════════════╗
+          ║  STATS BAR                                                        ║
+          ╚═══════════════════════════════════════════════════════════════════╝ */}
       <section className="bg-navy-900 border-b border-navy-800">
-        <div className="max-w-6xl mx-auto px-4 py-10">
-          <motion.div
-            className="grid grid-cols-2 lg:grid-cols-4 gap-8"
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-80px" }}
-            variants={staggerContainer}
-          >
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-10">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
             {STATS.map(({ value, label }) => (
-              <motion.div
-                key={label}
-                variants={staggerItem}
-                className="text-center"
-              >
-                <div className="text-3xl lg:text-4xl font-bold text-white mb-1">
-                  {value}
-                </div>
-                <div className="text-sm text-blue-300/70">{label}</div>
-              </motion.div>
+              <AnimatedStat key={label} value={value} label={label} />
             ))}
-          </motion.div>
+          </div>
         </div>
       </section>
 
-      {/* ── PROBLEM ────────────────────────────────────────────────────── */}
-      <section className="bg-white py-16 lg:py-24">
-        <div className="max-w-6xl mx-auto px-4">
+      {/* ╔═══════════════════════════════════════════════════════════════════╗
+          ║  DATA SOURCES TRUST BAR                                           ║
+          ╚═══════════════════════════════════════════════════════════════════╝ */}
+      <section className="bg-slate-50 border-b border-slate-100">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-8">
+            <span className="text-xs font-semibold uppercase tracking-widest text-slate-400">
+              Live data sourced from
+            </span>
+            <div className="flex flex-wrap items-center justify-center gap-6">
+              {[
+                "Contracts Finder",
+                "Find a Tender",
+                "NHS Supply Chain",
+                "National Highways",
+                "Sell2Wales",
+                "Public Contracts Scotland",
+              ].map((source) => (
+                <div key={source} className="flex items-center gap-1.5 text-slate-600 text-sm font-medium">
+                  <div className="h-1.5 w-1.5 rounded-full bg-govgreen-500" />
+                  {source}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ╔═══════════════════════════════════════════════════════════════════╗
+          ║  PROBLEM                                                          ║
+          ╚═══════════════════════════════════════════════════════════════════╝ */}
+      <section className="section-pad bg-white">
+        <div className="section-inner">
           <motion.div
             className="text-center mb-14"
             initial="hidden"
@@ -424,39 +549,37 @@ export default function LandingPage() {
             viewport={{ once: true, margin: "-80px" }}
             variants={fadeUp}
           >
-            <Badge className="bg-red-50 text-red-600 border border-red-100 mb-4 px-3 py-1 rounded-full text-sm">
+            <Badge className="bg-red-50 text-red-600 border border-red-100 mb-4 px-3 py-1 rounded-full text-xs font-semibold">
               The Problem
             </Badge>
-            <h2 className="text-3xl lg:text-4xl font-bold text-navy-900 leading-tight">
-              Public sector contracts are worth billions —{" "}
-              <span className="text-red-500">but most SMEs miss out</span>
+            <h2 className="text-3xl lg:text-4xl font-black text-navy-900 leading-tight mb-4">
+              Public sector contracts are worth billions.{" "}
+              <span className="text-red-500">Most SMEs miss out.</span>
             </h2>
-            <p className="mt-4 text-gray-500 max-w-2xl mx-auto text-lg">
-              The UK government spends over £300 billion a year on public
-              procurement. Less than 25% goes to SMEs — not because they can't
-              do the work, but because the process is stacked against them.
+            <p className="text-gray-500 max-w-2xl mx-auto text-lg leading-relaxed">
+              The UK government spends over £300 billion a year on public procurement.
+              Less than 25% goes to SMEs — not because they can't do the work, but because
+              the process is stacked against organisations without dedicated bid teams.
             </p>
           </motion.div>
 
           <motion.div
-            className="grid md:grid-cols-2 gap-6"
+            className="grid md:grid-cols-2 gap-5"
             initial="hidden"
             whileInView="visible"
-            viewport={{ once: true, margin: "-80px" }}
+            viewport={{ once: true, margin: "-60px" }}
             variants={staggerContainer}
           >
             {PAIN_POINTS.map(({ icon: Icon, title, body }) => (
               <motion.div key={title} variants={staggerItem}>
-                <Card className="rounded-xl border border-red-100 bg-red-50/40 shadow-sm hover:shadow-md transition-all duration-200 h-full">
+                <Card className="rounded-2xl border border-red-100 bg-gradient-to-br from-red-50/80 to-white shadow-sm hover:shadow-card-hover transition-all duration-200 h-full">
                   <CardContent className="p-6">
                     <div className="flex gap-4">
-                      <div className="flex-shrink-0 h-10 w-10 rounded-lg bg-red-100 flex items-center justify-center">
+                      <div className="shrink-0 h-10 w-10 rounded-xl bg-red-100 flex items-center justify-center">
                         <Icon className="h-5 w-5 text-red-500" />
                       </div>
                       <div>
-                        <h3 className="font-semibold text-navy-900 mb-1 leading-snug">
-                          {title}
-                        </h3>
+                        <h3 className="font-bold text-navy-900 mb-2 leading-snug">{title}</h3>
                         <p className="text-sm text-gray-500 leading-relaxed">{body}</p>
                       </div>
                     </div>
@@ -468,9 +591,11 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── SOLUTION ───────────────────────────────────────────────────── */}
-      <section className="bg-navy-50 py-16 lg:py-24">
-        <div className="max-w-6xl mx-auto px-4">
+      {/* ╔═══════════════════════════════════════════════════════════════════╗
+          ║  SOLUTION                                                         ║
+          ╚═══════════════════════════════════════════════════════════════════╝ */}
+      <section className="section-pad bg-navy-50">
+        <div className="section-inner">
           <motion.div
             className="text-center mb-14"
             initial="hidden"
@@ -478,38 +603,34 @@ export default function LandingPage() {
             viewport={{ once: true, margin: "-80px" }}
             variants={fadeUp}
           >
-            <Badge className="bg-govgreen-50 text-govgreen-700 border border-govgreen-200 mb-4 px-3 py-1 rounded-full text-sm">
+            <Badge className="bg-govgreen-50 text-govgreen-700 border border-govgreen-200 mb-4 px-3 py-1 rounded-full text-xs font-semibold">
               The Solution
             </Badge>
-            <h2 className="text-3xl lg:text-4xl font-bold text-navy-900 leading-tight">
-              BidIQ Pro gives you everything{" "}
-              <span className="text-govgreen-600">a full procurement team would have</span>
+            <h2 className="text-3xl lg:text-4xl font-black text-navy-900 leading-tight mb-4">
+              Everything a full procurement team has —{" "}
+              <span className="text-govgreen-600">built into one platform.</span>
             </h2>
-            <p className="mt-4 text-gray-500 max-w-2xl mx-auto text-lg">
-              One integrated platform that replaces expensive consultants,
+            <p className="text-gray-500 max-w-2xl mx-auto text-lg leading-relaxed">
+              One integrated AI operating system that replaces expensive bid consultants,
               fragmented spreadsheets and missed opportunities.
             </p>
           </motion.div>
 
           <motion.div
-            className="grid md:grid-cols-2 lg:grid-cols-3 gap-6"
+            className="grid md:grid-cols-2 lg:grid-cols-3 gap-5"
             initial="hidden"
             whileInView="visible"
-            viewport={{ once: true, margin: "-80px" }}
+            viewport={{ once: true, margin: "-60px" }}
             variants={staggerContainer}
           >
-            {SOLUTION_FEATURES.map(({ icon: Icon, title, body, color, bg }) => (
+            {SOLUTION_FEATURES.map(({ icon: Icon, title, body, color, bg, border }) => (
               <motion.div key={title} variants={staggerItem}>
-                <Card className="rounded-xl border border-gray-100 bg-white shadow-sm hover:shadow-md transition-all duration-200 h-full group">
+                <Card className={`rounded-2xl border ${border} bg-white shadow-card hover:shadow-card-hover hover:-translate-y-0.5 transition-all duration-200 h-full group`}>
                   <CardContent className="p-6">
-                    <div
-                      className={`h-11 w-11 rounded-xl ${bg} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-200`}
-                    >
+                    <div className={`h-11 w-11 rounded-xl ${bg} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-200`}>
                       <Icon className={`h-5 w-5 ${color}`} />
                     </div>
-                    <h3 className="font-semibold text-navy-900 text-base mb-2">
-                      {title}
-                    </h3>
+                    <h3 className="font-bold text-navy-900 text-base mb-2">{title}</h3>
                     <p className="text-sm text-gray-500 leading-relaxed">{body}</p>
                   </CardContent>
                 </Card>
@@ -519,9 +640,88 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── HOW IT WORKS ───────────────────────────────────────────────── */}
-      <section id="how-it-works" className="bg-white py-16 lg:py-24">
-        <div className="max-w-6xl mx-auto px-4">
+      {/* ╔═══════════════════════════════════════════════════════════════════╗
+          ║  COMPARISON                                                       ║
+          ╚═══════════════════════════════════════════════════════════════════╝ */}
+      <section className="section-pad bg-white">
+        <div className="section-inner">
+          <motion.div
+            className="text-center mb-12"
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-80px" }}
+            variants={fadeUp}
+          >
+            <Badge className="bg-navy-50 text-navy-700 border border-navy-200 mb-4 px-3 py-1 rounded-full text-xs font-semibold">
+              Why BidIQ Pro
+            </Badge>
+            <h2 className="text-3xl lg:text-4xl font-black text-navy-900 leading-tight mb-4">
+              Not just a tender alert service.{" "}
+              <span className="text-govgreen-600">An entire bid operation.</span>
+            </h2>
+            <p className="text-gray-500 max-w-xl mx-auto text-lg leading-relaxed">
+              Traditional tender alert platforms show you opportunities. BidIQ Pro helps
+              you find, qualify, prepare, bid, win, deliver and scale.
+            </p>
+          </motion.div>
+
+          <motion.div
+            className="max-w-3xl mx-auto"
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-60px" }}
+            variants={scaleIn}
+          >
+            <div className="rounded-2xl overflow-hidden border border-gray-200 shadow-card-hover">
+              {/* Header */}
+              <div className="grid grid-cols-3 bg-navy-900">
+                <div className="py-4 px-5 text-sm font-semibold text-blue-200/60">Capability</div>
+                <div className="py-4 px-5 text-center text-sm font-semibold text-blue-200/60 border-l border-white/10">
+                  Traditional alerts
+                </div>
+                <div className="py-4 px-5 text-center border-l border-white/10">
+                  <span className="text-sm font-bold text-white">BidIQ Pro</span>
+                  <span className="ml-1.5 text-[10px] text-govgreen-400 font-semibold bg-govgreen-400/15 px-1.5 py-0.5 rounded-full">AI</span>
+                </div>
+              </div>
+
+              {COMPARISON.map(({ feature, old, bidiq }, i) => (
+                <div
+                  key={feature}
+                  className={`grid grid-cols-3 ${i % 2 === 0 ? "bg-white" : "bg-slate-50"} border-t border-gray-100`}
+                >
+                  <div className="py-3 px-5 text-sm text-navy-800 font-medium">{feature}</div>
+                  <div className="py-3 px-5 flex justify-center items-center border-l border-gray-100">
+                    {old
+                      ? <CheckCircle2 className="h-4 w-4 text-govgreen-500" />
+                      : <X className="h-4 w-4 text-slate-300" />
+                    }
+                  </div>
+                  <div className="py-3 px-5 flex justify-center items-center border-l border-gray-100">
+                    <CheckCircle2 className="h-4 w-4 text-govgreen-600" />
+                  </div>
+                </div>
+              ))}
+
+              <div className="grid grid-cols-3 bg-govgreen-50 border-t-2 border-govgreen-200">
+                <div className="py-4 px-5 text-sm font-bold text-navy-900">Outcome</div>
+                <div className="py-4 px-5 text-center text-sm text-gray-500 border-l border-gray-100">
+                  See opportunities
+                </div>
+                <div className="py-4 px-5 text-center border-l border-govgreen-200">
+                  <span className="text-sm font-bold text-govgreen-700">Win contracts</span>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* ╔═══════════════════════════════════════════════════════════════════╗
+          ║  HOW IT WORKS                                                     ║
+          ╚═══════════════════════════════════════════════════════════════════╝ */}
+      <section id="how-it-works" className="section-pad bg-navy-50">
+        <div className="section-inner">
           <motion.div
             className="text-center mb-14"
             initial="hidden"
@@ -529,36 +729,38 @@ export default function LandingPage() {
             viewport={{ once: true, margin: "-80px" }}
             variants={fadeUp}
           >
-            <Badge className="bg-blue-50 text-blue-700 border border-blue-200 mb-4 px-3 py-1 rounded-full text-sm">
+            <Badge className="bg-blue-50 text-blue-700 border border-blue-200 mb-4 px-3 py-1 rounded-full text-xs font-semibold">
               How It Works
             </Badge>
-            <h2 className="text-3xl lg:text-4xl font-bold text-navy-900 leading-tight">
+            <h2 className="text-3xl lg:text-4xl font-black text-navy-900 leading-tight">
               From first check to first contract win —{" "}
-              <span className="text-blue-600">in four steps</span>
+              <span className="text-blue-600">in four steps.</span>
             </h2>
           </motion.div>
 
           <motion.div
-            className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 relative"
+            className="grid md:grid-cols-2 lg:grid-cols-4 gap-6"
             initial="hidden"
             whileInView="visible"
-            viewport={{ once: true, margin: "-80px" }}
+            viewport={{ once: true, margin: "-60px" }}
             variants={staggerContainer}
           >
             {HOW_IT_WORKS.map(({ step, icon: Icon, title, body }, i) => (
               <motion.div key={step} variants={staggerItem} className="relative">
-                {/* Connector line */}
                 {i < HOW_IT_WORKS.length - 1 && (
-                  <div className="hidden lg:block absolute top-8 left-[calc(100%+0px)] w-6 h-px bg-gray-200 z-10" />
+                  <div className="hidden lg:flex absolute top-7 left-[calc(100%-12px)] items-center z-10">
+                    <div className="h-px w-6 bg-navy-200" />
+                    <ChevronRight className="h-3 w-3 text-navy-300 -ml-1" />
+                  </div>
                 )}
-                <div className="text-center lg:text-left">
-                  <div className="inline-flex items-center justify-center h-14 w-14 rounded-2xl bg-navy-900 text-white font-bold text-lg mb-4 shadow-lg shadow-navy-900/20">
-                    {step}
-                  </div>
-                  <div className="flex items-center gap-2 mb-2 justify-center lg:justify-start">
+                <div className="bg-white rounded-2xl border border-gray-100 shadow-card p-6 h-full">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="h-12 w-12 rounded-2xl bg-navy-900 text-white font-black text-lg flex items-center justify-center shadow-navy shrink-0">
+                      {step}
+                    </div>
                     <Icon className="h-4 w-4 text-govgreen-600" />
-                    <h3 className="font-semibold text-navy-900 text-base">{title}</h3>
                   </div>
+                  <h3 className="font-bold text-navy-900 text-base mb-2 leading-snug">{title}</h3>
                   <p className="text-sm text-gray-500 leading-relaxed">{body}</p>
                 </div>
               </motion.div>
@@ -575,51 +777,114 @@ export default function LandingPage() {
             <Link to={ROUTES.register}>
               <Button
                 size="lg"
-                className="rounded-full bg-navy-900 hover:bg-navy-800 text-white font-semibold px-8 py-6 text-base shadow-md"
+                className="rounded-full bg-navy-900 hover:bg-navy-800 text-white font-semibold px-8 h-12 text-base shadow-navy transition-all duration-200 hover:scale-[1.02]"
               >
                 Start Your Free Readiness Check
-                <ArrowRight className="ml-2 h-5 w-5" />
+                <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             </Link>
-            <p className="mt-3 text-sm text-gray-400">
-              5 minutes. No account required to begin.
-            </p>
+            <p className="mt-3 text-sm text-gray-400">5 minutes. No account required to begin.</p>
           </motion.div>
         </div>
       </section>
 
-      {/* ── HIGHWAYS FOCUS ─────────────────────────────────────────────── */}
-      <section className="bg-navy-950 text-white py-16 lg:py-24 relative overflow-hidden">
-        <div className="pointer-events-none absolute inset-0">
-          <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-[0.03]" />
-          <div className="absolute top-0 right-0 h-96 w-96 bg-govgreen-600/10 rounded-full blur-3xl" />
+      {/* ╔═══════════════════════════════════════════════════════════════════╗
+          ║  MARKET OPPORTUNITY (INVESTOR-STYLE STATS)                        ║
+          ╚═══════════════════════════════════════════════════════════════════╝ */}
+      <section className="section-pad" style={{ background: "linear-gradient(135deg, #0f1f38 0%, #1e3055 100%)" }}>
+        <div className="section-inner">
+          <motion.div
+            className="grid lg:grid-cols-2 gap-16 items-center"
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-80px" }}
+            variants={staggerContainer}
+          >
+            <motion.div variants={staggerItem}>
+              <Badge className="bg-govgreen-600/20 text-govgreen-300 border border-govgreen-500/30 mb-4 px-3 py-1 rounded-full text-xs font-semibold">
+                Market Opportunity
+              </Badge>
+              <h2 className="text-3xl lg:text-4xl font-black text-white leading-tight mb-6">
+                A £300bn market that{" "}
+                <span className="text-govgreen-400">most SMEs can't access yet.</span>
+              </h2>
+              <p className="text-blue-100/70 leading-relaxed mb-6 text-lg">
+                UK public procurement is the largest addressable market for growing SMEs —
+                and it's legally required to be open to small businesses. The barrier isn't
+                eligibility. It's the lack of a proper procurement operation.
+              </p>
+              <div className="space-y-3">
+                {[
+                  "£300bn+ in annual UK public sector contracts",
+                  "25% legally ring-fenced for SMEs under the Procurement Act 2023",
+                  "Over 12,000 new tenders published every month",
+                  "Average contract value: £280,000 — achievable for most SMEs",
+                ].map((point) => (
+                  <div key={point} className="flex items-start gap-3">
+                    <CheckCircle2 className="h-4 w-4 text-govgreen-400 shrink-0 mt-0.5" />
+                    <span className="text-blue-100/80 text-sm">{point}</span>
+                  </div>
+                ))}
+              </div>
+            </motion.div>
+
+            <motion.div
+              variants={staggerItem}
+              className="grid grid-cols-2 gap-4"
+            >
+              {[
+                { value: "£300bn+", label: "Annual UK procurement spend", colour: "#4ade80" },
+                { value: "25%",     label: "Reserved for SMEs by law",   colour: "#60a5fa" },
+                { value: "12,000+", label: "New tenders per month",      colour: "#a78bfa" },
+                { value: "£280k",   label: "Average contract value",     colour: "#fb923c" },
+              ].map(({ value, label, colour }) => (
+                <div
+                  key={label}
+                  className="rounded-2xl p-6 border border-white/10 text-center"
+                  style={{ background: "rgba(255,255,255,0.05)" }}
+                >
+                  <div className="text-3xl font-black mb-2" style={{ color: colour }}>{value}</div>
+                  <div className="text-sm text-blue-200/60 leading-tight">{label}</div>
+                </div>
+              ))}
+            </motion.div>
+          </motion.div>
         </div>
-        <div className="relative max-w-6xl mx-auto px-4">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
+      </section>
+
+      {/* ╔═══════════════════════════════════════════════════════════════════╗
+          ║  HIGHWAYS SPECIALISM                                              ║
+          ╚═══════════════════════════════════════════════════════════════════╝ */}
+      <section className="section-pad bg-navy-950 text-white relative overflow-hidden">
+        <div className="pointer-events-none absolute inset-0">
+          <div className="absolute top-0 right-0 h-96 w-96 bg-govgreen-600/8 rounded-full blur-3xl" />
+          <div className="absolute bottom-0 left-0 h-64 w-64 bg-blue-600/8 rounded-full blur-3xl" />
+        </div>
+        <div className="relative section-inner">
+          <div className="grid lg:grid-cols-2 gap-12 items-center mb-14">
             <motion.div
               initial="hidden"
               whileInView="visible"
               viewport={{ once: true, margin: "-80px" }}
               variants={fadeUp}
             >
-              <Badge className="bg-govgreen-600/20 text-govgreen-300 border border-govgreen-500/30 mb-4 px-3 py-1 rounded-full text-sm">
+              <Badge className="bg-govgreen-600/20 text-govgreen-300 border border-govgreen-500/30 mb-4 px-3 py-1 rounded-full text-xs font-semibold">
                 Sector Specialism
               </Badge>
-              <h2 className="text-3xl lg:text-4xl font-bold leading-tight mb-4">
+              <h2 className="text-3xl lg:text-4xl font-black leading-tight mb-5">
                 Built for highways, construction{" "}
-                <span className="text-govgreen-400">and infrastructure SMEs</span>
+                <span className="text-govgreen-400">and infrastructure SMEs.</span>
               </h2>
               <p className="text-blue-100/70 leading-relaxed mb-6 text-lg">
-                BidIQ Pro understands the frameworks, qualification requirements
-                and evaluation criteria used by National Highways, Highways England,
-                local authority highways teams and StreetWorks authorities. From
-                NHSF regional frameworks to multi-authority DPS agreements, we
-                know the landscape you work in.
+                BidIQ Pro understands the frameworks, qualification requirements and
+                evaluation criteria used by National Highways, local authority highways
+                teams and StreetWorks authorities. From NHSF regional frameworks to
+                multi-authority DPS agreements, we know the landscape you work in.
               </p>
-              <Badge className="bg-amber-500/20 text-amber-300 border border-amber-400/30 px-3 py-1.5 rounded-full text-sm font-medium">
-                <Award className="h-3.5 w-3.5 mr-1.5 inline" />
+              <div className="inline-flex items-center gap-2 bg-amber-500/15 border border-amber-400/30 text-amber-300 rounded-full px-4 py-2 text-sm font-semibold">
+                <Award className="h-4 w-4" />
                 National Highways SME Gateway aligned
-              </Badge>
+              </div>
             </motion.div>
 
             <motion.div
@@ -633,24 +898,25 @@ export default function LandingPage() {
                 <motion.div
                   key={cat}
                   variants={staggerItem}
-                  className="flex items-center gap-2 bg-white/6 border border-white/10 rounded-lg px-3 py-2.5"
+                  className="flex items-center gap-2.5 rounded-xl border border-white/10 bg-white/5 px-3 py-2.5 hover:bg-white/8 hover:border-govgreen-500/30 transition-all duration-200"
                 >
-                  <CheckCircle2 className="h-4 w-4 text-govgreen-400 flex-shrink-0" />
+                  <CheckCircle2 className="h-4 w-4 text-govgreen-400 shrink-0" />
                   <span className="text-sm text-blue-100/80">{cat}</span>
                 </motion.div>
               ))}
             </motion.div>
           </div>
 
-          {/* Sector icons row */}
-          <Separator className="mt-14 mb-10 bg-white/10" />
+          <Separator className="bg-white/8 mb-12" />
+
+          {/* Sector icons */}
           <motion.div
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true, margin: "-80px" }}
             variants={staggerContainer}
           >
-            <p className="text-center text-xs uppercase tracking-widest text-blue-300/40 mb-8 font-medium">
+            <p className="text-center text-[10px] uppercase tracking-widest text-blue-300/40 mb-8 font-semibold">
               Covering every public sector category
             </p>
             <div className="flex flex-wrap justify-center gap-6">
@@ -658,12 +924,12 @@ export default function LandingPage() {
                 <motion.div
                   key={label}
                   variants={staggerItem}
-                  className="flex flex-col items-center gap-2 group"
+                  className="flex flex-col items-center gap-2 group cursor-default"
                 >
-                  <div className="h-12 w-12 rounded-xl bg-white/8 border border-white/10 flex items-center justify-center group-hover:bg-govgreen-600/20 group-hover:border-govgreen-500/30 transition-all duration-200">
-                    <Icon className="h-5 w-5 text-blue-200/60 group-hover:text-govgreen-300 transition-colors duration-200" />
+                  <div className="h-12 w-12 rounded-xl bg-white/6 border border-white/10 flex items-center justify-center group-hover:bg-govgreen-600/20 group-hover:border-govgreen-500/30 transition-all duration-200">
+                    <Icon className="h-5 w-5 text-blue-200/50 group-hover:text-govgreen-300 transition-colors duration-200" />
                   </div>
-                  <span className="text-xs text-blue-200/50">{label}</span>
+                  <span className="text-[11px] text-blue-200/40 group-hover:text-blue-200/70 transition-colors">{label}</span>
                 </motion.div>
               ))}
             </div>
@@ -671,9 +937,11 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── FEATURES GRID ──────────────────────────────────────────────── */}
-      <section id="features" className="bg-navy-50 py-16 lg:py-24">
-        <div className="max-w-6xl mx-auto px-4">
+      {/* ╔═══════════════════════════════════════════════════════════════════╗
+          ║  FEATURES GRID                                                    ║
+          ╚═══════════════════════════════════════════════════════════════════╝ */}
+      <section id="features" className="section-pad bg-slate-50">
+        <div className="section-inner">
           <motion.div
             className="text-center mb-14"
             initial="hidden"
@@ -681,15 +949,15 @@ export default function LandingPage() {
             viewport={{ once: true, margin: "-80px" }}
             variants={fadeUp}
           >
-            <Badge className="bg-navy-100 text-navy-700 border border-navy-200 mb-4 px-3 py-1 rounded-full text-sm">
+            <Badge className="bg-navy-100 text-navy-700 border border-navy-200 mb-4 px-3 py-1 rounded-full text-xs font-semibold">
               Platform Features
             </Badge>
-            <h2 className="text-3xl lg:text-4xl font-bold text-navy-900 leading-tight">
-              Everything you need to compete and win
+            <h2 className="text-3xl lg:text-4xl font-black text-navy-900 leading-tight">
+              Every tool you need to compete and win.
             </h2>
-            <p className="mt-4 text-gray-500 max-w-xl mx-auto">
-              Twelve integrated modules covering every stage of the procurement
-              lifecycle — from first alert to contract renewal.
+            <p className="mt-4 text-gray-500 max-w-xl mx-auto text-lg leading-relaxed">
+              Twelve integrated modules covering every stage of the procurement lifecycle —
+              from first alert to contract renewal.
             </p>
           </motion.div>
 
@@ -697,29 +965,25 @@ export default function LandingPage() {
             className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"
             initial="hidden"
             whileInView="visible"
-            viewport={{ once: true, margin: "-80px" }}
+            viewport={{ once: true, margin: "-60px" }}
             variants={staggerContainer}
           >
             {FEATURES_GRID.map(({ icon: Icon, title, badge }) => (
               <motion.div key={title} variants={staggerItem}>
-                <Card className="rounded-xl border border-gray-100 bg-white shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 h-full">
+                <Card className="rounded-xl border border-gray-100 bg-white shadow-card hover:shadow-card-hover hover:-translate-y-0.5 transition-all duration-200 h-full">
                   <CardContent className="p-5 flex items-start gap-3">
-                    <div className="h-9 w-9 rounded-lg bg-navy-900/5 flex items-center justify-center flex-shrink-0">
+                    <div className="h-9 w-9 rounded-lg bg-navy-900/6 flex items-center justify-center shrink-0">
                       <Icon className="h-4 w-4 text-navy-700" />
                     </div>
                     <div className="min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-medium text-navy-900 text-sm">{title}</span>
+                        <span className="font-semibold text-navy-900 text-sm">{title}</span>
                         {badge && (
-                          <Badge
-                            className={`text-xs px-1.5 py-0.5 rounded font-medium ${
-                              badge === "New"
-                                ? "bg-govgreen-100 text-govgreen-700 border-govgreen-200"
-                                : badge === "Pro"
-                                ? "bg-purple-100 text-purple-700 border-purple-200"
-                                : "bg-blue-100 text-blue-700 border-blue-200"
-                            } border`}
-                          >
+                          <Badge className={`text-[10px] px-1.5 py-0.5 rounded font-semibold border ${
+                            badge === "New"    ? "bg-govgreen-100 text-govgreen-700 border-govgreen-200" :
+                            badge === "Pro"    ? "bg-purple-100 text-purple-700 border-purple-200" :
+                            "bg-blue-100 text-blue-700 border-blue-200"
+                          }`}>
                             {badge}
                           </Badge>
                         )}
@@ -733,9 +997,69 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── PRICING ────────────────────────────────────────────────────── */}
-      <section id="pricing" className="bg-white py-16 lg:py-24">
-        <div className="max-w-6xl mx-auto px-4">
+      {/* ╔═══════════════════════════════════════════════════════════════════╗
+          ║  TESTIMONIALS                                                     ║
+          ╚═══════════════════════════════════════════════════════════════════╝ */}
+      <section className="section-pad bg-white border-y border-gray-100">
+        <div className="section-inner">
+          <motion.div
+            className="text-center mb-12"
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-80px" }}
+            variants={fadeUp}
+          >
+            <div className="flex items-center justify-center gap-0.5 mb-3">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <Star key={i} className="h-5 w-5 fill-amber-400 text-amber-400" />
+              ))}
+            </div>
+            <h2 className="text-2xl lg:text-3xl font-black text-navy-900">
+              Trusted by SMEs winning bigger contracts
+            </h2>
+          </motion.div>
+
+          <motion.div
+            className="grid md:grid-cols-3 gap-6"
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-60px" }}
+            variants={staggerContainer}
+          >
+            {TESTIMONIALS.map(({ quote, name, role, company, stars, avatar }) => (
+              <motion.div key={name} variants={staggerItem}>
+                <Card className="rounded-2xl border border-gray-100 bg-white shadow-card hover:shadow-card-hover transition-all duration-200 h-full">
+                  <CardContent className="p-6 flex flex-col h-full">
+                    <div className="flex gap-0.5 mb-4">
+                      {Array.from({ length: stars }).map((_, i) => (
+                        <Star key={i} className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
+                      ))}
+                    </div>
+                    <p className="text-gray-700 text-sm leading-relaxed mb-5 flex-1 italic">
+                      "{quote}"
+                    </p>
+                    <div className="flex items-center gap-3">
+                      <div className="h-10 w-10 rounded-full bg-navy-900 flex items-center justify-center text-xs font-black text-white shrink-0">
+                        {avatar}
+                      </div>
+                      <div>
+                        <p className="font-bold text-navy-900 text-sm">{name}</p>
+                        <p className="text-xs text-gray-400">{role} · {company}</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            ))}
+          </motion.div>
+        </div>
+      </section>
+
+      {/* ╔═══════════════════════════════════════════════════════════════════╗
+          ║  PRICING                                                          ║
+          ╚═══════════════════════════════════════════════════════════════════╝ */}
+      <section id="pricing" className="section-pad bg-slate-50">
+        <div className="section-inner">
           <motion.div
             className="text-center mb-14"
             initial="hidden"
@@ -743,21 +1067,19 @@ export default function LandingPage() {
             viewport={{ once: true, margin: "-80px" }}
             variants={fadeUp}
           >
-            <Badge className="bg-govgreen-50 text-govgreen-700 border border-govgreen-200 mb-4 px-3 py-1 rounded-full text-sm">
+            <Badge className="bg-govgreen-50 text-govgreen-700 border border-govgreen-200 mb-4 px-3 py-1 rounded-full text-xs font-semibold">
               Pricing
             </Badge>
-            <h2 className="text-3xl lg:text-4xl font-bold text-navy-900 leading-tight">
+            <h2 className="text-3xl lg:text-4xl font-black text-navy-900 leading-tight">
               Transparent pricing. No hidden fees.
             </h2>
-            <p className="mt-4 text-gray-500 max-w-xl mx-auto">
+            <p className="mt-4 text-gray-500 max-w-xl mx-auto text-lg">
               14-day free trial on every plan. No setup fee. Cancel any time.
             </p>
-
-            {/* Trial callouts */}
-            <div className="flex flex-wrap gap-4 justify-center mt-6">
-              {["14-day free trial", "No setup fee", "No credit card required", "Cancel any time"].map((item) => (
+            <div className="flex flex-wrap gap-5 justify-center mt-6">
+              {["14-day free trial", "No setup fee", "No card required", "Cancel any time"].map((item) => (
                 <div key={item} className="flex items-center gap-1.5 text-sm text-gray-500">
-                  <CheckCircle2 className="h-4 w-4 text-govgreen-600 flex-shrink-0" />
+                  <CheckCircle2 className="h-4 w-4 text-govgreen-600 shrink-0" />
                   {item}
                 </div>
               ))}
@@ -768,101 +1090,61 @@ export default function LandingPage() {
             className="grid md:grid-cols-3 gap-6 items-stretch"
             initial="hidden"
             whileInView="visible"
-            viewport={{ once: true, margin: "-80px" }}
+            viewport={{ once: true, margin: "-60px" }}
             variants={staggerContainer}
           >
             {PRICING.map((plan) => (
               <motion.div key={plan.name} variants={staggerItem} className="flex">
-                <div
-                  className={`relative rounded-2xl border flex flex-col w-full transition-all duration-200 ${
-                    plan.highlighted
-                      ? "bg-navy-900 border-navy-900 shadow-2xl shadow-navy-900/30 scale-105"
-                      : "bg-white border-gray-200 shadow-sm hover:shadow-md"
-                  }`}
-                >
-                  {/* Most popular badge */}
+                <div className={`relative rounded-2xl border flex flex-col w-full transition-all duration-200 ${
+                  plan.highlighted
+                    ? "bg-navy-900 border-navy-800 shadow-navy scale-[1.03]"
+                    : "bg-white border-gray-200 shadow-card hover:shadow-card-hover"
+                }`}>
                   {plan.highlighted && plan.badge && (
                     <div className="absolute -top-4 left-0 right-0 flex justify-center">
-                      <Badge className="bg-govgreen-600 text-white border-0 px-4 py-1.5 text-sm font-semibold rounded-full shadow-lg">
+                      <Badge className="bg-govgreen-600 text-white border-0 px-4 py-1.5 text-xs font-bold rounded-full shadow-green">
                         {plan.badge}
                       </Badge>
                     </div>
                   )}
 
                   <div className="p-8 flex flex-col flex-1">
-                    {/* Plan name */}
                     <div className="mb-6">
-                      <h3
-                        className={`text-xl font-bold mb-1 ${
-                          plan.highlighted ? "text-white" : "text-navy-900"
-                        }`}
-                      >
+                      <h3 className={`text-xl font-black mb-1 ${plan.highlighted ? "text-white" : "text-navy-900"}`}>
                         {plan.name}
                       </h3>
                       <div className="flex items-baseline gap-1">
-                        <span
-                          className={`text-4xl font-bold ${
-                            plan.highlighted ? "text-white" : "text-navy-900"
-                          }`}
-                        >
+                        <span className={`text-4xl font-black tracking-tight ${plan.highlighted ? "text-white" : "text-navy-900"}`}>
                           £{plan.price}
                         </span>
-                        <span
-                          className={`text-sm ${
-                            plan.highlighted ? "text-blue-200/60" : "text-gray-400"
-                          }`}
-                        >
+                        <span className={`text-sm ${plan.highlighted ? "text-blue-200/50" : "text-gray-400"}`}>
                           /{plan.period}
                         </span>
                       </div>
-                      <p
-                        className={`text-xs mt-1 ${
-                          plan.highlighted ? "text-blue-200/50" : "text-gray-400"
-                        }`}
-                      >
+                      <p className={`text-xs mt-1 ${plan.highlighted ? "text-blue-200/40" : "text-gray-400"}`}>
                         + VAT. Billed monthly.
                       </p>
                     </div>
 
-                    <Separator
-                      className={`mb-6 ${
-                        plan.highlighted ? "bg-white/10" : "bg-gray-100"
-                      }`}
-                    />
+                    <Separator className={`mb-6 ${plan.highlighted ? "bg-white/10" : "bg-gray-100"}`} />
 
-                    {/* Features */}
                     <ul className="space-y-3 flex-1 mb-8">
                       {plan.features.map((feature) => (
                         <li key={feature} className="flex items-start gap-2.5">
-                          <CheckCircle2
-                            className={`h-4 w-4 mt-0.5 flex-shrink-0 ${
-                              plan.highlighted
-                                ? "text-govgreen-400"
-                                : "text-govgreen-600"
-                            }`}
-                          />
-                          <span
-                            className={`text-sm ${
-                              plan.highlighted
-                                ? "text-blue-100/80"
-                                : "text-gray-600"
-                            }`}
-                          >
+                          <CheckCircle2 className={`h-4 w-4 mt-0.5 shrink-0 ${plan.highlighted ? "text-govgreen-400" : "text-govgreen-600"}`} />
+                          <span className={`text-sm ${plan.highlighted ? "text-blue-100/80" : "text-gray-600"}`}>
                             {feature}
                           </span>
                         </li>
                       ))}
                     </ul>
 
-                    {/* CTA */}
-                    <Link
-                      to={plan.cta === "Book Demo" ? "#" : ROUTES.register}
-                    >
+                    <Link to={plan.cta === "Book Demo" ? "#" : ROUTES.register}>
                       <Button
                         size="lg"
-                        className={`w-full rounded-full font-semibold text-base py-5 transition-all duration-200 ${
+                        className={`w-full rounded-full font-bold text-base h-12 transition-all duration-200 hover:scale-[1.02] ${
                           plan.highlighted
-                            ? "bg-govgreen-600 hover:bg-govgreen-500 text-white shadow-lg"
+                            ? "bg-govgreen-600 hover:bg-govgreen-500 text-white shadow-green"
                             : "bg-navy-900 hover:bg-navy-800 text-white"
                         }`}
                       >
@@ -876,7 +1158,6 @@ export default function LandingPage() {
             ))}
           </motion.div>
 
-          {/* Enterprise note */}
           <motion.div
             className="text-center mt-10 text-sm text-gray-400"
             initial="hidden"
@@ -884,80 +1165,19 @@ export default function LandingPage() {
             viewport={{ once: true, margin: "-80px" }}
             variants={fadeUp}
           >
-            Need a multi-user or enterprise licence?{" "}
-            <a
-              href="mailto:hello@bidiqpro.co.uk"
-              className="text-navy-700 underline underline-offset-2 hover:text-govgreen-600 transition-colors"
-            >
+            Need multi-user or enterprise licensing?{" "}
+            <a href="mailto:hello@bidiqpro.co.uk" className="text-navy-700 underline underline-offset-2 hover:text-govgreen-600 transition-colors">
               Contact us for custom pricing
             </a>
-            .
           </motion.div>
         </div>
       </section>
 
-      {/* ── TESTIMONIAL STRIP ──────────────────────────────────────────── */}
-      <section className="bg-navy-50 py-14 border-y border-gray-100">
-        <div className="max-w-6xl mx-auto px-4">
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-80px" }}
-            variants={staggerContainer}
-            className="grid md:grid-cols-3 gap-6"
-          >
-            {[
-              {
-                quote:
-                  "BidIQ Pro found us a National Highways maintenance contract we'd have completely missed. We won it on our first attempt.",
-                name: "James T.",
-                role: "Director, highways maintenance contractor",
-                stars: 5,
-              },
-              {
-                quote:
-                  "The Compliance Vault alone is worth the subscription. No more panicking about expired insurances the night before a deadline.",
-                name: "Priya S.",
-                role: "Operations Manager, FM company",
-                stars: 5,
-              },
-              {
-                quote:
-                  "We went from a 12% win rate to over 40% in eight months. The AI bid workspace has transformed how we respond to tenders.",
-                name: "Mark W.",
-                role: "MD, construction SME",
-                stars: 5,
-              },
-            ].map(({ quote, name, role, stars }) => (
-              <motion.div key={name} variants={staggerItem}>
-                <Card className="rounded-xl border border-gray-100 bg-white shadow-sm h-full">
-                  <CardContent className="p-6">
-                    <div className="flex gap-0.5 mb-4">
-                      {Array.from({ length: stars }).map((_, i) => (
-                        <Star
-                          key={i}
-                          className="h-4 w-4 fill-amber-400 text-amber-400"
-                        />
-                      ))}
-                    </div>
-                    <p className="text-gray-700 text-sm leading-relaxed mb-4 italic">
-                      "{quote}"
-                    </p>
-                    <div>
-                      <p className="font-semibold text-navy-900 text-sm">{name}</p>
-                      <p className="text-xs text-gray-400">{role}</p>
-                    </div>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            ))}
-          </motion.div>
-        </div>
-      </section>
-
-      {/* ── FAQ ────────────────────────────────────────────────────────── */}
-      <section className="bg-white py-16 lg:py-24">
-        <div className="max-w-3xl mx-auto px-4">
+      {/* ╔═══════════════════════════════════════════════════════════════════╗
+          ║  FAQ                                                              ║
+          ╚═══════════════════════════════════════════════════════════════════╝ */}
+      <section className="section-pad bg-white">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6">
           <motion.div
             className="text-center mb-12"
             initial="hidden"
@@ -965,10 +1185,10 @@ export default function LandingPage() {
             viewport={{ once: true, margin: "-80px" }}
             variants={fadeUp}
           >
-            <Badge className="bg-blue-50 text-blue-700 border border-blue-200 mb-4 px-3 py-1 rounded-full text-sm">
+            <Badge className="bg-blue-50 text-blue-700 border border-blue-200 mb-4 px-3 py-1 rounded-full text-xs font-semibold">
               FAQ
             </Badge>
-            <h2 className="text-3xl lg:text-4xl font-bold text-navy-900 leading-tight">
+            <h2 className="text-3xl lg:text-4xl font-black text-navy-900 leading-tight">
               Common questions
             </h2>
           </motion.div>
@@ -984,9 +1204,9 @@ export default function LandingPage() {
                 <AccordionItem
                   key={i}
                   value={`faq-${i}`}
-                  className="border border-gray-200 rounded-xl px-5 shadow-sm data-[state=open]:shadow-md transition-shadow duration-200"
+                  className="border border-gray-200 rounded-xl px-5 shadow-card data-[state=open]:shadow-card-hover data-[state=open]:border-gray-300 transition-all duration-200"
                 >
-                  <AccordionTrigger className="text-left font-semibold text-navy-900 py-5 hover:no-underline text-base">
+                  <AccordionTrigger className="text-left font-bold text-navy-900 py-5 hover:no-underline text-base">
                     {q}
                   </AccordionTrigger>
                   <AccordionContent className="text-gray-500 leading-relaxed pb-5 text-sm">
@@ -999,16 +1219,18 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── BOOK DEMO CTA ──────────────────────────────────────────────── */}
-      <section className="bg-navy-950 text-white py-20 lg:py-28 relative overflow-hidden">
+      {/* ╔═══════════════════════════════════════════════════════════════════╗
+          ║  FINAL CTA                                                        ║
+          ╚═══════════════════════════════════════════════════════════════════╝ */}
+      <section className="section-pad relative overflow-hidden" style={{ background: "linear-gradient(135deg, #0a1628 0%, #0f1f38 40%, #1e3055 100%)" }}>
         <div className="pointer-events-none absolute inset-0">
           <motion.div
-            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-[600px] w-[600px] rounded-full bg-govgreen-600/8 blur-3xl"
-            animate={{ scale: [1, 1.2, 1] }}
+            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-[700px] w-[700px] rounded-full bg-govgreen-600/8 blur-3xl"
+            animate={{ scale: [1, 1.15, 1] }}
             transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
           />
         </div>
-        <div className="relative max-w-6xl mx-auto px-4 text-center">
+        <div className="relative section-inner text-center">
           <motion.div
             initial="hidden"
             whileInView="visible"
@@ -1016,14 +1238,14 @@ export default function LandingPage() {
             variants={staggerContainer}
           >
             <motion.div variants={staggerItem}>
-              <Badge className="bg-govgreen-600/20 text-govgreen-300 border border-govgreen-500/30 mb-6 px-3 py-1 rounded-full text-sm">
-                Get Started Today
+              <Badge className="bg-govgreen-600/20 text-govgreen-300 border border-govgreen-500/30 mb-6 px-3 py-1 rounded-full text-xs font-semibold">
+                Get Started Today — Free for 14 Days
               </Badge>
             </motion.div>
 
             <motion.h2
               variants={staggerItem}
-              className="text-4xl lg:text-5xl font-bold leading-tight mb-6 max-w-3xl mx-auto"
+              className="text-4xl lg:text-5xl font-black text-white leading-tight mb-6 max-w-3xl mx-auto"
             >
               Ready to win more{" "}
               <span className="text-govgreen-400">public sector contracts?</span>
@@ -1031,11 +1253,11 @@ export default function LandingPage() {
 
             <motion.p
               variants={staggerItem}
-              className="text-blue-100/70 text-lg max-w-2xl mx-auto mb-10"
+              className="text-blue-100/70 text-lg max-w-2xl mx-auto mb-10 leading-relaxed"
             >
-              Join 500+ SMEs using BidIQ Pro to find, qualify for and win
-              government contracts across highways, NHS, local authority and
-              beyond. Start your free readiness check in 5 minutes.
+              Join 500+ SMEs using BidIQ Pro to find, qualify for and win government
+              contracts across highways, NHS, local authority and beyond. Start your
+              free readiness check in 5 minutes.
             </motion.p>
 
             <motion.div
@@ -1045,7 +1267,7 @@ export default function LandingPage() {
               <Link to={ROUTES.register}>
                 <Button
                   size="lg"
-                  className="rounded-full bg-govgreen-600 hover:bg-govgreen-500 text-white font-semibold px-10 py-6 text-base shadow-lg shadow-govgreen-900/30"
+                  className="rounded-full bg-govgreen-600 hover:bg-govgreen-500 text-white font-bold px-10 h-13 text-base shadow-green transition-all duration-200 hover:scale-[1.02]"
                 >
                   Start Your Free Readiness Check
                   <ArrowRight className="ml-2 h-5 w-5" />
@@ -1054,7 +1276,7 @@ export default function LandingPage() {
               <Button
                 size="lg"
                 variant="outline"
-                className="rounded-full border-white/25 text-white hover:bg-white/8 hover:border-white/40 px-10 py-6 text-base backdrop-blur-sm"
+                className="rounded-full border-white/20 text-white hover:bg-white/8 hover:border-white/35 px-10 h-13 text-base backdrop-blur-sm transition-all duration-200"
               >
                 Book a 30-Minute Demo
               </Button>
@@ -1064,12 +1286,7 @@ export default function LandingPage() {
               variants={staggerItem}
               className="flex flex-wrap gap-5 justify-center mt-10 text-sm text-blue-200/50"
             >
-              {[
-                "14-day free trial",
-                "No card required",
-                "No setup fee",
-                "UK-hosted & secure",
-              ].map((item) => (
+              {["14-day free trial", "No card required", "No setup fee", "UK-hosted & secure"].map((item) => (
                 <div key={item} className="flex items-center gap-1.5">
                   <CheckCircle2 className="h-3.5 w-3.5 text-govgreen-500" />
                   {item}
@@ -1080,39 +1297,72 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── FOOTER ─────────────────────────────────────────────────────── */}
-      <footer className="bg-navy-950 border-t border-white/5 text-blue-200/40 py-10">
-        <div className="max-w-6xl mx-auto px-4">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-            <div className="text-center md:text-left">
-              <p className="font-semibold text-white/60 mb-0.5">BidIQ Pro</p>
-              <p className="text-xs">
-                A product of Civic Ladder Ltd. Registered in England & Wales.
+      {/* ╔═══════════════════════════════════════════════════════════════════╗
+          ║  FOOTER                                                           ║
+          ╚═══════════════════════════════════════════════════════════════════╝ */}
+      <footer className="bg-navy-950 border-t border-white/5">
+        <div className="section-inner py-14">
+          <div className="grid md:grid-cols-5 gap-10 mb-12">
+            {/* Brand column */}
+            <div className="md:col-span-2 space-y-4">
+              <Logo size="md" variant="full" white />
+              <p className="text-sm text-blue-200/50 leading-relaxed max-w-xs">
+                The AI Procurement Operating System for SMEs. Find, qualify for,
+                bid on and win UK public sector contracts.
+              </p>
+              <p className="text-xs text-blue-200/30">
+                © 2026 Civic Ladder Ltd. Registered in England & Wales.
               </p>
             </div>
-            <div className="flex flex-wrap gap-6 text-xs justify-center">
-              {[
-                "Privacy Policy",
-                "Terms of Service",
-                "Cookie Policy",
-                "Security",
-              ].map((link) => (
-                <a
-                  key={link}
-                  href="#"
-                  className="hover:text-white/60 transition-colors duration-150"
-                >
-                  {link}
-                </a>
-              ))}
+
+            {/* Product */}
+            <div>
+              <h4 className="text-xs font-bold text-white uppercase tracking-widest mb-4">Product</h4>
+              <ul className="space-y-2.5 text-sm text-blue-200/50">
+                <li><a href="#features" className="hover:text-white transition-colors">Features</a></li>
+                <li><a href="#pricing" className="hover:text-white transition-colors">Pricing</a></li>
+                <li><Link to={ROUTES.onboarding} className="hover:text-white transition-colors">Readiness Check</Link></li>
+                <li><Link to={ROUTES.tenders} className="hover:text-white transition-colors">Live Tender Feed</Link></li>
+                <li><Link to={ROUTES.academy} className="hover:text-white transition-colors">Procurement Academy</Link></li>
+              </ul>
+            </div>
+
+            {/* Sectors */}
+            <div>
+              <h4 className="text-xs font-bold text-white uppercase tracking-widest mb-4">Sectors</h4>
+              <ul className="space-y-2.5 text-sm text-blue-200/50">
+                <li className="hover:text-white/70 transition-colors cursor-default">Highways & National Highways</li>
+                <li className="hover:text-white/70 transition-colors cursor-default">Local Authority</li>
+                <li className="hover:text-white/70 transition-colors cursor-default">NHS & Health</li>
+                <li className="hover:text-white/70 transition-colors cursor-default">Housing Associations</li>
+                <li className="hover:text-white/70 transition-colors cursor-default">Education</li>
+              </ul>
+            </div>
+
+            {/* Company */}
+            <div>
+              <h4 className="text-xs font-bold text-white uppercase tracking-widest mb-4">Company</h4>
+              <ul className="space-y-2.5 text-sm text-blue-200/50">
+                <li><a href="#" className="hover:text-white transition-colors">About Civic Ladder Ltd</a></li>
+                <li><a href="#" className="hover:text-white transition-colors">Privacy Policy</a></li>
+                <li><a href="#" className="hover:text-white transition-colors">Terms of Service</a></li>
+                <li><a href="#" className="hover:text-white transition-colors">Cookie Policy</a></li>
+                <li><a href="mailto:hello@bidiqpro.co.uk" className="hover:text-white transition-colors">Contact Us</a></li>
+              </ul>
             </div>
           </div>
-          <Separator className="my-6 bg-white/5" />
-          <p className="text-xs text-center">
-            © {new Date().getFullYear()} Civic Ladder Ltd. All rights reserved.
-            BidIQ Pro is not affiliated with or endorsed by any government
-            department, NHS body or Crown Commercial Service.
-          </p>
+
+          <Separator className="bg-white/6 mb-8" />
+
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+            <p className="text-xs text-blue-200/30 text-center sm:text-left">
+              BidIQ Pro is not affiliated with or endorsed by any government department, NHS body or Crown Commercial Service.
+            </p>
+            <div className="flex items-center gap-2 text-xs text-blue-200/30">
+              <div className="h-1.5 w-1.5 rounded-full bg-govgreen-500" />
+              All systems operational
+            </div>
+          </div>
         </div>
       </footer>
 
