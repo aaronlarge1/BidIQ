@@ -87,6 +87,15 @@ export interface Tender {
   socialValueWeighting?: number
   framework?: string
   isDemo?: boolean
+  source?: string
+  sourceUrl?: string | null
+  isHighwaysRelated?: boolean
+  isNationalHighways?: boolean
+  isInfrastructureRelated?: boolean
+  isSMEFriendly?: boolean
+  summary?: string | null
+  keyRequirements?: string[]
+  lastSyncedAt?: string | null
 }
 
 export interface OpportunityDetail extends Tender {

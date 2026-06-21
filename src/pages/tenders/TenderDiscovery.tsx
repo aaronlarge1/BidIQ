@@ -14,6 +14,7 @@ import {
   AlertCircle,
   CheckCircle2,
   X,
+  ExternalLink,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -28,7 +29,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { formatCurrency, formatDate, daysUntil, cn } from "@/lib/utils"
 import { CONTRACT_CATEGORIES, UK_REGIONS, ROUTES } from "@/lib/constants"
 import type { Tender } from "@/types"
-import { useTenders } from "@/hooks/useApi"
+import { useTenders, useSyncStatus } from "@/hooks/useApi"
 
 // ─── Types & constants ────────────────────────────────────────────────────────
 
@@ -85,6 +86,41 @@ function valueInRange(tender: Tender, range: ValueRange): boolean {
   if (range === "1m-5m") return v > 1_000_000 && v <= 5_000_000
   if (range === "5m+") return v > 5_000_000
   return true
+}
+
+// ─── Source Badge ─────────────────────────────────────────────────────────────
+
+function SourceBadge({ tender }: { tender: Tender }) {
+  const isDemo = tender.isDemo || tender.source === "demo"
+
+  return (
+    <div className="flex flex-wrap items-center gap-1.5">
+      {isDemo ? (
+        <span className="inline-flex items-center rounded px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide bg-amber-100 text-amber-800 border border-amber-300">
+          Demo
+        </span>
+      ) : tender.source === "contracts-finder" ? (
+        <span className="inline-flex items-center rounded px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide bg-blue-100 text-blue-800 border border-blue-300">
+          Contracts Finder
+        </span>
+      ) : tender.source === "find-tender" ? (
+        <span className="inline-flex items-center rounded px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide bg-purple-100 text-purple-800 border border-purple-300">
+          Find a Tender
+        </span>
+      ) : null}
+
+      {tender.isHighwaysRelated && !tender.isNationalHighways && (
+        <span className="inline-flex items-center rounded px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide bg-teal-100 text-teal-800 border border-teal-300">
+          Highways
+        </span>
+      )}
+      {tender.isNationalHighways && (
+        <span className="inline-flex items-center rounded px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide bg-teal-100 text-teal-800 border border-teal-300">
+          National Highways
+        </span>
+      )}
+    </div>
+  )
 }
 
 // ─── Opportunity Score Badge ──────────────────────────────────────────────────
@@ -196,7 +232,12 @@ function TenderCard({
       onClick={() => navigate(ROUTES.tender(tender.id))}
     >
       <CardContent className="p-5">
-        {/* Top row: badges */}
+        {/* Top row: source badges */}
+        <div className="mb-2">
+          <SourceBadge tender={tender} />
+        </div>
+
+        {/* Category + type badges */}
         <div className="mb-3 flex flex-wrap items-center gap-2">
           <span
             className={cn(
@@ -252,9 +293,9 @@ function TenderCard({
           <DeadlineChip deadline={tender.deadline} />
         </div>
 
-        {/* Description */}
+        {/* Description / AI summary */}
         <p className="mb-4 line-clamp-2 text-sm leading-relaxed text-gray-500">
-          {tender.description}
+          {tender.summary ?? tender.description}
         </p>
 
         {/* Bottom row */}
@@ -266,7 +307,19 @@ function TenderCard({
             {tender.opportunityScore != null && <ScoreBadge score={tender.opportunityScore} />}
             <RecommendationBadge rec={tender.recommendation} />
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            {tender.sourceUrl && (
+              <a
+                href={tender.sourceUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <Button variant="outline" size="sm" className="h-8 px-3 text-xs">
+                  View Official Notice <ExternalLink className="h-3 w-3 ml-1" />
+                </Button>
+              </a>
+            )}
             <Button
               size="sm"
               variant="ghost"
@@ -311,6 +364,11 @@ interface FilterState {
   highwaysOnly: boolean
   frameworksOnly: boolean
   socialValue: SocialValue
+  // Source & Type server-side filters
+  showHighways: boolean
+  showInfrastructure: boolean
+  showDemoOnly: boolean
+  showLiveOnly: boolean
 }
 
 const DEFAULT_FILTERS: FilterState = {
@@ -323,6 +381,10 @@ const DEFAULT_FILTERS: FilterState = {
   highwaysOnly: false,
   frameworksOnly: false,
   socialValue: "any",
+  showHighways: false,
+  showInfrastructure: false,
+  showDemoOnly: false,
+  showLiveOnly: false,
 }
 
 function SidebarFilters({
@@ -502,6 +564,57 @@ function SidebarFilters({
 
       <Separator />
 
+      {/* Source & Type */}
+      <div>
+        <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-gray-500">
+          Source &amp; Type
+        </p>
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center gap-2">
+            <Checkbox
+              id="filter-highways"
+              checked={filters.showHighways}
+              onCheckedChange={(v) => onChange({ showHighways: !!v })}
+            />
+            <Label htmlFor="filter-highways" className="cursor-pointer text-sm text-gray-700">
+              National Highways / Highways
+            </Label>
+          </div>
+          <div className="flex items-center gap-2">
+            <Checkbox
+              id="filter-infrastructure"
+              checked={filters.showInfrastructure}
+              onCheckedChange={(v) => onChange({ showInfrastructure: !!v })}
+            />
+            <Label htmlFor="filter-infrastructure" className="cursor-pointer text-sm text-gray-700">
+              Infrastructure
+            </Label>
+          </div>
+          <div className="flex items-center gap-2">
+            <Checkbox
+              id="filter-demo-only"
+              checked={filters.showDemoOnly}
+              onCheckedChange={(v) => onChange({ showDemoOnly: !!v, showLiveOnly: v ? false : filters.showLiveOnly })}
+            />
+            <Label htmlFor="filter-demo-only" className="cursor-pointer text-sm text-gray-700">
+              Demo only
+            </Label>
+          </div>
+          <div className="flex items-center gap-2">
+            <Checkbox
+              id="filter-live-only"
+              checked={filters.showLiveOnly}
+              onCheckedChange={(v) => onChange({ showLiveOnly: !!v, showDemoOnly: v ? false : filters.showDemoOnly })}
+            />
+            <Label htmlFor="filter-live-only" className="cursor-pointer text-sm text-gray-700">
+              Live only
+            </Label>
+          </div>
+        </div>
+      </div>
+
+      <Separator />
+
       {/* Special filters */}
       <div>
         <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-gray-500">
@@ -639,6 +752,14 @@ function ActiveFilterChips({
       label: `SV ${filters.socialValue}%+`,
       onRemove: () => onChange({ socialValue: "any" }),
     })
+  if (filters.showHighways)
+    chips.push({ label: "Highways/National Highways", onRemove: () => onChange({ showHighways: false }) })
+  if (filters.showInfrastructure)
+    chips.push({ label: "Infrastructure", onRemove: () => onChange({ showInfrastructure: false }) })
+  if (filters.showDemoOnly)
+    chips.push({ label: "Demo only", onRemove: () => onChange({ showDemoOnly: false }) })
+  if (filters.showLiveOnly)
+    chips.push({ label: "Live only", onRemove: () => onChange({ showLiveOnly: false }) })
 
   if (chips.length === 0) return null
 
@@ -677,7 +798,7 @@ function EmptyState({ hasFilters, onClear }: { hasFilters: boolean; onClear: () 
       {hasFilters ? (
         <>
           <p className="mb-4 max-w-xs text-sm text-gray-500">
-            Try adjusting your search terms or removing some filters to see more opportunities.
+            No live tenders matched your filters yet. Demo tenders are shown until live sources are configured and synced.
           </p>
           <Button variant="outline" size="sm" onClick={onClear}>
             Clear filters
@@ -685,8 +806,58 @@ function EmptyState({ hasFilters, onClear }: { hasFilters: boolean; onClear: () 
         </>
       ) : (
         <p className="mb-4 max-w-xs text-sm text-gray-500">
-          No tenders have been loaded yet. Check back soon.
+          No live tenders matched your filters yet. Demo tenders are shown until live sources are configured and synced.
         </p>
+      )}
+    </div>
+  )
+}
+
+// ─── Live Feed Header ─────────────────────────────────────────────────────────
+
+function LiveFeedHeader({ tenders }: { tenders: Tender[] }) {
+  const { data: syncStatus } = useSyncStatus()
+
+  const hasLive = tenders.some((t) => !t.isDemo && t.source !== "demo")
+
+  const lastSyncedAt: string | null | undefined =
+    syncStatus?.lastSyncedAt ?? tenders.find((t) => t.lastSyncedAt)?.lastSyncedAt
+
+  function minsAgo(dateStr: string): string {
+    const diff = Date.now() - new Date(dateStr).getTime()
+    const mins = Math.floor(diff / 60_000)
+    if (mins < 1) return "just now"
+    if (mins === 1) return "1 min ago"
+    if (mins < 60) return `${mins} mins ago`
+    const hrs = Math.floor(mins / 60)
+    if (hrs === 1) return "1 hr ago"
+    return `${hrs} hrs ago`
+  }
+
+  return (
+    <div className="flex flex-wrap items-center gap-3">
+      <div className="flex items-center gap-2">
+        {hasLive ? (
+          <>
+            <span className="relative flex h-2.5 w-2.5">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75" />
+              <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-green-500" />
+            </span>
+            <h1 className="text-2xl font-bold text-gray-900">Live Tender Feed</h1>
+          </>
+        ) : (
+          <>
+            <h1 className="text-2xl font-bold text-gray-900">Tender Discovery</h1>
+            <span className="inline-flex items-center rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-800 border border-amber-300">
+              Demo Mode
+            </span>
+          </>
+        )}
+      </div>
+      {lastSyncedAt && hasLive && (
+        <span className="text-xs text-gray-500">
+          Last updated: {minsAgo(lastSyncedAt)}
+        </span>
       )}
     </div>
   )
@@ -702,7 +873,16 @@ export default function TenderDiscovery() {
   const [savedIds, setSavedIds] = useState<Set<string>>(new Set())
   const [rejectedIds, setRejectedIds] = useState<Set<string>>(new Set())
 
-  const { data: tendersData } = useTenders()
+  // Build server-side query params from filter state
+  const serverFilters = useMemo(() => {
+    const params: Record<string, string> = {}
+    if (filters.showHighways) params.highways = "true"
+    if (filters.showDemoOnly) params.isDemo = "true"
+    if (filters.showLiveOnly) params.isDemo = "false"
+    return params
+  }, [filters.showHighways, filters.showDemoOnly, filters.showLiveOnly])
+
+  const { data: tendersData } = useTenders(serverFilters as any)
   const allTenders: Tender[] = tendersData?.tenders ?? []
 
   function patchFilters(patch: Partial<FilterState>) {
@@ -769,6 +949,9 @@ export default function TenderDiscovery() {
         if (!t.socialValueWeighting || t.socialValueWeighting < minSV) return false
       }
 
+      // Infrastructure client-side filter (server doesn't have a dedicated param yet)
+      if (filters.showInfrastructure && !t.isInfrastructureRelated) return false
+
       return true
     })
   }, [allTenders, searchQuery, filters, rejectedIds])
@@ -777,7 +960,7 @@ export default function TenderDiscovery() {
     () => ({
       all: baseFiltered,
       recommended: baseFiltered.filter((t) => t.recommendation === "recommended"),
-      highways: baseFiltered.filter((t) => t.category === "highways"),
+      highways: baseFiltered.filter((t) => t.category === "highways" || t.isHighwaysRelated),
       frameworks: baseFiltered.filter((t) => t.type === "framework"),
       closing: baseFiltered.filter((t) => daysUntil(t.deadline) <= 30),
     }),
@@ -805,7 +988,11 @@ export default function TenderDiscovery() {
     filters.smeOnly ||
     filters.highwaysOnly ||
     filters.frameworksOnly ||
-    filters.socialValue !== "any"
+    filters.socialValue !== "any" ||
+    filters.showHighways ||
+    filters.showInfrastructure ||
+    filters.showDemoOnly ||
+    filters.showLiveOnly
 
   // suppress unused warning — savedIds tracked for future "Saved" tab
   void savedIds
@@ -815,11 +1002,11 @@ export default function TenderDiscovery() {
       {/* ── Page Header ───────────────────────────────────────────────────────── */}
       <div className="border-b border-gray-200 bg-white px-4 py-6 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-screen-xl">
-          {/* Title row */}
+          {/* Title row — Live Feed header */}
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
               <div className="mb-1 flex items-center gap-2">
-                <h1 className="text-2xl font-bold text-gray-900">Find Tenders</h1>
+                <LiveFeedHeader tenders={allTenders} />
               </div>
               <p className="text-sm text-gray-500">
                 Discover matched government, local authority, NHS, highways and framework

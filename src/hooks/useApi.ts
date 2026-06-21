@@ -122,6 +122,10 @@ interface TenderFilters {
   search?: string
   page?: string
   limit?: string
+  source?: string
+  isHighwaysRelated?: string  // "true" or "false"
+  isDemo?: string
+  highways?: string  // "true"
 }
 
 export function useTenders(filters?: TenderFilters) {
@@ -138,6 +142,26 @@ export function useTender(id: string, options?: UseQueryOptions<OpportunityDetai
     queryFn: () => api.get<OpportunityDetail>(`/api/tenders/${id}`),
     enabled: !!id,
     ...options,
+  })
+}
+
+export function useSyncStatus() {
+  return useQuery({
+    queryKey: ["sync-status"],
+    queryFn: () => api.get<any>("/api/system/tender-sync/status"),
+    staleTime: 60_000,
+    refetchInterval: 5 * 60_000,
+  })
+}
+
+export function useTriggerSync() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: () => api.post("/api/system/sync/tenders", {}),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: QK.tenders() })
+      qc.invalidateQueries({ queryKey: ["sync-status"] })
+    },
   })
 }
 
