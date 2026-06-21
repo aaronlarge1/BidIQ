@@ -2,9 +2,11 @@ import { useState } from "react"
 import { useNavigate, Link } from "react-router-dom"
 import { motion } from "framer-motion"
 import { Eye, EyeOff, Loader2 } from "lucide-react"
+import { GoogleLogin } from "@react-oauth/google"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Separator } from "@/components/ui/separator"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { useAuth, ApiError } from "@/context/AuthContext"
 import { ROUTES } from "@/lib/constants"
@@ -19,7 +21,7 @@ export default function AuthPage({ mode = "login" }: { mode?: "login" | "registe
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const { login, register, hasCompany } = useAuth()
+  const { login, loginWithGoogle, register, hasCompany } = useAuth()
   const navigate = useNavigate()
 
   async function handleSubmit(e: React.FormEvent) {
@@ -138,6 +140,38 @@ export default function AuthPage({ mode = "login" }: { mode?: "login" | "registe
                   {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   {isLogin ? "Sign in" : "Create account"}
                 </Button>
+
+                <div className="relative my-1">
+                  <div className="absolute inset-0 flex items-center">
+                    <Separator />
+                  </div>
+                  <div className="relative flex justify-center">
+                    <span className="bg-white px-3 text-xs text-gray-400">or</span>
+                  </div>
+                </div>
+
+                <div className="flex justify-center">
+                  <GoogleLogin
+                    onSuccess={async (response) => {
+                      if (!response.credential) return
+                      setLoading(true)
+                      setError(null)
+                      try {
+                        await loginWithGoogle(response.credential)
+                        navigate(hasCompany ? ROUTES.dashboard : ROUTES.onboarding)
+                      } catch (err) {
+                        setError(err instanceof ApiError ? err.message : "Google sign-in failed")
+                      } finally {
+                        setLoading(false)
+                      }
+                    }}
+                    onError={() => setError("Google sign-in failed")}
+                    text={isLogin ? "signin_with" : "signup_with"}
+                    theme="outline"
+                    shape="rectangular"
+                    width="368"
+                  />
+                </div>
               </form>
 
               <div className="mt-5 text-center text-sm text-gray-500">
